@@ -1,0 +1,16 @@
+- name: "Process STL Files"
+  conditions:
+    end: ".stl"  # Match files ending with .stl
+  action:
+    type: "move"
+    target: "stl_files/"
+  check_archive: true  # Search inside compressed archives for matching files
+
+- name: "Process ISO Files"
+  conditions:
+    end: ".iso"  # Match files ending with .iso
+    older: "2d"
+  action:
+    type: "move"
+    target: "iso_files/"
+  check_archive: true  # Search inside compressed archives for matching files

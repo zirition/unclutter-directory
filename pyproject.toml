@@ -1,0 +1,11 @@
+[project]
+name = "unclutter_directory"
+version = "0.1.0"
+description = "Unclutter your directory with ease."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1.8",
+    "pyyaml>=6.0.2",
+]
+
