@@ -1,4 +1,3 @@
-import logging
 import zipfile
 
 from abc import ABC, abstractmethod
@@ -6,9 +5,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger("download_organizer")
+from unclutter_directory import commons
+
+logger = commons.get_logger()
 
 
 class File:

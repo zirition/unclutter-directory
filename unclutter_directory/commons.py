@@ -1,10 +1,14 @@
+import sys
 from typing import List
 import logging
 
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[logging.StreamHandler(sys.stdout)])
 logger = logging.getLogger("download_organizer")
 
+def get_logger():
+    return logger
 
 def parse_size(size_str: str) -> int:
     # Convert size string to bytes

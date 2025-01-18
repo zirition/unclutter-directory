@@ -1,13 +1,11 @@
-import logging
 import os
 from typing import Dict
 from pathlib import Path
 import zipfile
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger("download_organizer")
+from unclutter_directory import commons
 
+logger = commons.get_logger()
 
 class ActionExecutor:
     def __init__(self, action: Dict):
@@ -27,7 +25,7 @@ class ActionExecutor:
                 return new_path
             suffix += 1
 
-    def execute_action(self, file_path: Path):
+    def execute_action(self, file_path: Path, parent_path: Path):
         action_type = self.action.get("type")
         target = self.action.get("target")
 
@@ -37,7 +35,11 @@ class ActionExecutor:
 
         # Execute actions
         if action_type == "move":
-            target_path = file_path.parent / target / file_path.name
+            rel_path = file_path.relative_to(parent_path)
+            if Path(target).is_absolute():
+                target_path = Path(target) / rel_path
+            else:
+                target_path = Path(parent_path) / target / rel_path
             target_path = self.resolve_conflict(target_path)
             if not target_path:
                 logger.error(f"Failed to resolve conflict for {file_path}")

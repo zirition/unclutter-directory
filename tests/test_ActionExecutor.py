@@ -26,7 +26,7 @@ class TestActionExecutor(unittest.TestCase):
         make_dirs_patch.return_value = None
 
         executor = ActionExecutor(action)
-        executor.execute_action(self.file_path)
+        executor.execute_action(self.file_path, self.temp_dir)
         moved_file = Path(self.temp_dir) / "test_file_1.txt" # The _1 is needed because the file already exists
 
         make_dirs_patch.assert_called_once_with(Path(self.temp_dir), exist_ok=True)
@@ -35,13 +35,13 @@ class TestActionExecutor(unittest.TestCase):
     def test_delete_action(self):
         action = {"type": "delete"}
         executor = ActionExecutor(action)
-        executor.execute_action(self.file_path)
+        executor.execute_action(self.file_path, self.temp_dir)
         self.assertFalse(self.file_path.exists())
 
     def test_compress_action(self):
         action = {"type": "compress", "target": self.temp_dir}
         executor = ActionExecutor(action)
-        executor.execute_action(self.file_path)
+        executor.execute_action(self.file_path, self.temp_dir)
         compressed_file = Path(self.temp_dir) / "test_file.zip"
         self.assertTrue(compressed_file.exists())
 
@@ -51,7 +51,7 @@ class TestActionExecutor(unittest.TestCase):
         action = {"type": "compress", "target": self.temp_dir}
         executor = ActionExecutor(action)
         with self.assertLogs(level='INFO') as log:
-            executor.execute_action(forbidden_file)
+            executor.execute_action(forbidden_file, self.temp_dir)
             self.assertIn("Skipping compression for file with forbidden extension", log.output[0])
 
 if __name__ == "__main__":
