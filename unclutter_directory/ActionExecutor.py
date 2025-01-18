@@ -37,7 +37,7 @@ class ActionExecutor:
 
         # Execute actions
         if action_type == "move":
-            target_path = Path(target) / file_path.name
+            target_path = file_path.parent / target / file_path.name
             target_path = self.resolve_conflict(target_path)
             if not target_path:
                 logger.error(f"Failed to resolve conflict for {file_path}")

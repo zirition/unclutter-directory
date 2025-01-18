@@ -18,8 +18,8 @@ class FileMatcher:
 
             # If the check_archive condition is set, check the contents of the archive it the rule apply
             if rule.get("check_archive", {}) and archive_manager is not None:
-                for file in archive_manager.get_files(file):
-                    if self._file_matches_conditions(file, rule.get("conditions", {})):
+                for archived_file in archive_manager.get_files(file):
+                    if self._file_matches_conditions(archived_file, rule.get("conditions", {})):
                         return rule
         return None
 

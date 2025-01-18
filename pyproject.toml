@@ -9,3 +9,5 @@ dependencies = [
     "pyyaml>=6.0.2",
 ]
 
+[project.scripts]
+unclutter_directory = "unclutter_directory.unclutter_directory:cli"

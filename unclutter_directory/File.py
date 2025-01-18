@@ -1,9 +1,14 @@
+import logging
 import zipfile
 
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import List
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger("download_organizer")
 
 
 class File:
@@ -43,14 +48,17 @@ class ZipArchive(CompressedArchive):
 
     def get_files(self, file: File) -> List[File]:
         archive_path = file.path / file.name
-        with zipfile.ZipFile(archive_path, "r") as zipf:
-            return [
-                File(
-                    file.path,
-                    name,
-                    zipf.getinfo(name).date_time,
-                    zipf.getinfo(name).file_size,
-                )
-                for name in zipf.namelist()
-            ]
-
+        try:
+            with zipfile.ZipFile(archive_path, "r") as zipf:
+                return [
+                    File(
+                        file.path,
+                        name,
+                        zipf.getinfo(name).date_time,
+                        zipf.getinfo(name).file_size,
+                    )
+                    for name in zipf.namelist()
+                ]
+        except zipfile.BadZipFile:
+            logger.error(f"Error reading zip file: {archive_path}")
+            return []
