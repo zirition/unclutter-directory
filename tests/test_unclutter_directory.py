@@ -213,5 +213,29 @@ class TestUnclutterDirectory(unittest.TestCase):
         # Check that the match was not called for the hidden file
         self.assertEqual(mock_matcher.return_value.match.call_count, 0)
 
+    @patch("unclutter_directory.unclutter_directory.FileMatcher")
+    @patch("unclutter_directory.unclutter_directory._load_rules")
+    @patch.object(Path, 'is_file')
+    @patch.object(Path, 'iterdir')
+    def test_organize_ignore_rules_file(self, mock_iterdir, mock_is_file, mock_load_rules, mock_matcher):
+        # Setup
+        mock_load_rules.return_value = self.mock_rules
+        mock_matcher.return_value.match.return_value = self.mock_rules[0]
+
+        # Create a file in the directory
+        regular_file_path = Path(self.temp_dir) / "file.txt"
+        regular_file_path.touch()
+
+        mock_iterdir.return_value = [self.rules_path, regular_file_path]
+        mock_is_file.return_value = True
+
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path)])
+
+        self.assertEqual(result.exit_code, 0)
+        # Check that the match was not called for the rules file
+        self.assertEqual(mock_matcher.return_value.match.call_count, 1)  # Only for "file.txt"
+
+
 if __name__ == "__main__":
     unittest.main()

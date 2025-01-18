@@ -154,6 +154,11 @@ def organize(target_dir, rules_file, dry_run, quiet, always_delete, never_delete
     files = [f.name for f in Path(target_dir).iterdir() 
              if f.is_file() and (include_hidden or not f.name.startswith('.'))]
 
+    # Ignore rules file
+    if Path(target_dir) == Path(rules_file).parent:
+        rules_file_path = Path(rules_file)
+        files = [f for f in files if f != rules_file_path.name]
+
     for file_name in files:
         file_path = Path(target_dir) / file_name
         file = File.from_path(file_path)
