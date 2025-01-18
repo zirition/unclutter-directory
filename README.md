@@ -1,6 +1,8 @@
 # Unclutter Directory
 
-Unclutter Directory is a Python-based tool for organizing files in a directory according to specified rules. It allows you to move, delete, or compress files based on file conditions such as name patterns, size, and age. The project utilizes a rules file that defines the conditions and actions for file management.
+Unclutter Directory is a Python-based tool for organizing files in a directory according to specified rules. It allows you to move, delete, or compress files based on file conditions such as name patterns, size, and age. 
+
+The rules are defined in a YAML file used as parameter.
 
 ## Features
 - **Move**: Move files to a specified directory.
@@ -45,11 +47,11 @@ The project includes a CLI utility powered by Click. You can run the tool using 
 Organize files in a directory based on your rules:
 
 ```bash
-python -m unclutter_directory organize <rules_file> <target_dir> [--dry-run]
+python -m unclutter_directory organize <target_dir> [<rules_file> ] [--dry-run]
 ```
 
-- `<rules_file>`: Path to the YAML file that contains organization rules.
 - `<target_dir>`: Directory path where the files are to be organized.
+- `<rules_file>`: Path to the YAML file containing organization rules. If omitted, it searches for `.unclutter_rules.yaml` in `<target_dir>`.
 - `--dry-run`: Optional flag for simulating the actions without making changes.
 
 #### Validate

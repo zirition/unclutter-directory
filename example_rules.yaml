@@ -1,0 +1,29 @@
+- name: "Process Ubuntu ISO files using all the posible conditions"
+  conditions:
+    start: "Ubuntu"  # Match files starting with "Ubuntu"
+    contain: "buntu" # Match files containing "buntu"
+    regex: "^Ubuntu.*.iso$"  # Match files starting with "Ubuntu" and ending with .iso
+    end: ".iso"  # Match files ending with .iso
+    older: "2d" # Match files older than 2 days. Time can be in seconds (using 's' or nothign), minutes (m), hours(h), days(d) or weeks (w)
+    newer: "1w" # Match files newer than 1 week
+    larger: "100MB" # Match files larger than 100MB. Size can be in bytes (using 'B' or nothing), kilobytes (KB), megabytes (MB), gigabytes (GB)
+    smaller: "5GB" # Match files smaller than 5GB
+  action:
+    type: "move" # Move the files...
+    target: "iso_files/"  # To the iso_files directory
+  check_archive: true  # Search inside compressed archives for matching files
+
+- name: "Process other ISO files not matching the previous rule"
+  conditions:
+    end: ".iso"  # Match files ending with .iso
+  action:
+    type: "compress" # Compress the files
+  check_archive: false
+
+- name: "Delete old logs"
+  conditions:
+    end: ".log"  # Match files ending with .log
+    older: "30d" # Match files older than 30 days
+  action:
+    type: "delete" # Delete the files
+  check_archive: false

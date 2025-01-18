@@ -16,7 +16,7 @@ def parse_size(size_str: str) -> int:
 
 def parse_time(time_str: str) -> int:
     # Convert time string to seconds
-    time_map = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+    time_map = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
     for unit, multiplier in time_map.items():
         if time_str.lower().endswith(unit):
             return int(time_str[: -len(unit)].strip()) * multiplier
