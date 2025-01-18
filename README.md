@@ -1,8 +1,8 @@
 # Unclutter Directory
 
-Unclutter Directory is a Python-based tool for organizing files in a directory according to specified rules. It allows you to move, delete, or compress files based on file conditions such as name patterns, size, and age. 
+Unclutter Directory is a Python-based tool for organizing files in a directory according to specified rules. It allows you to move, delete, or compress files based on file conditions such as name patterns, size, and age.
 
-The rules are defined in a YAML file used as parameter.
+The rules are defined in a YAML file used as a parameter.
 
 ## Features
 - **Move**: Move files to a specified directory.
@@ -12,6 +12,8 @@ The rules are defined in a YAML file used as parameter.
 Using 
 - **Customizable Rules**: Define conditions like name patterns, file size, and age for performing actions.
 - **Dry Run Mode**: Simulate actions without making actual changes to verify intended effect.
+- **Support for Hidden Files**: Option to include hidden files (files starting with a dot).
+- **Flexible Deletion Options**: Choose to always delete matched files or never delete them.
 
 ## Requirements
 
@@ -23,12 +25,12 @@ Using
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/zirition/unclutter_directory.git
+   git clone https://github.com/zirition/unclutter-directory.git
    ```
 
 2. Change into the project directory:
    ```bash
-   cd unclutter_directory
+   cd unclutter-directory
    ```
 
 3. Install dependencies:
@@ -47,19 +49,23 @@ The project includes a CLI utility powered by Click. You can run the tool using 
 Organize files in a directory based on your rules:
 
 ```bash
-python -m unclutter_directory organize <target_dir> [<rules_file> ] [--dry-run]
+python -m unclutter-directory organize <target_dir> [<rules_file>] [--dry-run] [--quiet] [--always-delete] [--never-delete] [--include-hidden]
 ```
 
 - `<target_dir>`: Directory path where the files are to be organized.
 - `<rules_file>`: Path to the YAML file containing organization rules. If omitted, it searches for `.unclutter_rules.yaml` in `<target_dir>`.
 - `--dry-run`: Optional flag for simulating the actions without making changes.
+- `--quiet`: Optional flag to suppress non-error messages.
+- `--always-delete`: Optional flag to always delete matched files without confirmation.
+- `--never-delete`: Optional flag to never delete matched files.
+- `--include-hidden`: Optional flag to include hidden files (files starting with a dot).
 
-#### Validate
+### Validate
 
 Validate the structure and attributes of a rules file:
 
 ```bash
-python -m unclutter_directory validate <rules_file>
+python -m unclutter-directory validate <rules_file>
 ```
 
 - `<rules_file>`: Path to the YAML file that contains organization rules.

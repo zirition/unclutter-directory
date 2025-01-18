@@ -1,5 +1,5 @@
 [project]
-name = "unclutter_directory"
+name = "unclutter-directory"
 version = "0.1.0"
 description = "Unclutter your directory with ease."
 readme = "README.md"
@@ -10,4 +10,4 @@ dependencies = [
 ]
 
 [project.scripts]
-unclutter_directory = "unclutter_directory.unclutter_directory:cli"
+unclutter-directory = "unclutter_directory.unclutter_directory:cli"
