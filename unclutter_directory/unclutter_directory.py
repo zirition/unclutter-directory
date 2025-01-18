@@ -109,7 +109,13 @@ def cli():
     default=False,
     help="Never delete matched files.",
 )
-def organize(target_dir, rules_file, dry_run, quiet, always_delete, never_delete):
+@click.option(
+    "--include-hidden",
+    is_flag=True,
+    default=False,
+    help="Include hidden files (files starting with dot).",
+)
+def organize(target_dir, rules_file, dry_run, quiet, always_delete, never_delete, include_hidden):
     "Organize files in directory based on the file rules. (Default)"
 
     # Configure logging
@@ -144,8 +150,9 @@ def organize(target_dir, rules_file, dry_run, quiet, always_delete, never_delete
 
     rule_responses = {}
 
-    # Traverse directory
-    files = [f.name for f in Path(target_dir).iterdir() if f.is_file()]
+    # Traverse directory, optionally including hidden files
+    files = [f.name for f in Path(target_dir).iterdir() 
+             if f.is_file() and (include_hidden or not f.name.startswith('.'))]
 
     for file_name in files:
         file_path = Path(target_dir) / file_name

@@ -29,10 +29,9 @@ class TestUnclutterDirectory(unittest.TestCase):
 
         # Click check that the directory and file exists, so we need to create them
         self.temp_dir = tempfile.mkdtemp()
-        self.file_path = Path(self.temp_dir) / "test_file.txt"
-        self.file_path.touch()
+        self.rules_path = Path(self.temp_dir) / "rules.yaml"
+        self.rules_path.touch()
 
-        self.mock_yaml_file = yaml.dump(self.mock_rules)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -60,11 +59,10 @@ class TestUnclutterDirectory(unittest.TestCase):
         mock_valid_rules.return_value = []
         mock_matcher.return_value.match.return_value = self.mock_rules[0]
 
-
         # Run organize with dry-run
         runner = click.testing.CliRunner()
         result = runner.invoke(
-            cli, ["organize", str(self.temp_dir), str(self.file_path), "--dry-run"]
+            cli, ["organize", str(self.temp_dir), str(self.rules_path), "--dry-run"]
         )
 
         self.assertEqual(result.exit_code, 0)
@@ -77,30 +75,38 @@ class TestUnclutterDirectory(unittest.TestCase):
         mock_load_rules.return_value = self.mock_rules
         mock_valid_rules.return_value = ["Error"]
 
-        # Run organize with invalid rules
-        runner = click.testing.CliRunner()
-        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.file_path)])
+        with self.assertLogs('download_organizer', level='INFO') as logger:
+            # Run organize with invalid rules
+            runner = click.testing.CliRunner()
+            result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path)])
 
-        self.assertEqual(result.exit_code, 0)
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Invalid rules file", logger.output[0])
 
     def test_validate_nonexistent_file(self):
         runner = click.testing.CliRunner()
         result = runner.invoke(cli, ["validate", "nonexistent.yaml"])
         self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("File 'nonexistent.yaml' does not exist", result.output)
 
     @patch("unclutter_directory.unclutter_directory._load_rules")
     def test_validate_empty_rules(self, mock_load_rules):
         mock_load_rules.return_value = {"rules": []}
 
-        runner = click.testing.CliRunner()
-        result = runner.invoke(cli, ["validate", str(self.file_path)])
+        with self.assertLogs('download_organizer', level='INFO') as logger:
+            runner = click.testing.CliRunner()
+            result = runner.invoke(cli, ["validate", str(self.rules_path)])
 
-        self.assertEqual(result.exit_code, 0)
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Validation complete.", logger.output[0])
+
 
     @patch("unclutter_directory.unclutter_directory.File")
     @patch("unclutter_directory.unclutter_directory._load_rules")
     @patch("unclutter_directory.unclutter_directory.FileMatcher")
-    def test_organize_multiple_files(self, mock_matcher, mock_load_rules, mock_file):
+    @patch.object(Path, 'is_file')
+    @patch.object(Path, 'iterdir')
+    def test_organize_multiple_files(self, mock_iterdir, mock_is_file, mock_matcher, mock_load_rules, mock_file):
         mock_load_rules.return_value = self.mock_rules
         mock_matcher.return_value.match.side_effect = [
             {"action": {"type": "move", "target": "dir1"}},
@@ -110,21 +116,20 @@ class TestUnclutterDirectory(unittest.TestCase):
         tmp_path = Path("/tmp/test")
         files = [tmp_path / "file1.txt", tmp_path / "file2.txt", tmp_path / "file3.txt"]
 
+        mock_iterdir.return_value = files
+        mock_is_file.return_value = True
         mock_file.from_path.return_value = File(tmp_path, files[0], 100, 100)
 
-        with patch("os.walk") as mock_walk:
-            mock_walk.return_value = [(str(tmp_path), [], [f.name for f in files])]
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path), '--dry-run'])
 
-            runner = click.testing.CliRunner()
-            result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.file_path), '--dry-run'])
-
-            self.assertEqual(result.exit_code, 0)
-            self.assertEqual(mock_matcher.return_value.match.call_count, 3)
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(mock_matcher.return_value.match.call_count, 3)
 
     def test_both_flags_provided(self):
       with self.assertLogs('download_organizer', level='INFO') as logger:
         runner = click.testing.CliRunner()
-        result = runner.invoke(cli, ['organize', str(self.temp_dir), str(self.file_path), '--never-delete', '--always-delete'])
+        result = runner.invoke(cli, ['organize', str(self.temp_dir), str(self.rules_path), '--never-delete', '--always-delete'])
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Options --always-delete and --never-delete are mutually exclusive.", logger.output[0])
 
@@ -140,7 +145,7 @@ class TestUnclutterDirectory(unittest.TestCase):
         mock_file.from_path.return_value = File(self.temp_dir, "test_file.txt", 100, 100)
 
         runner = click.testing.CliRunner()
-        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.file_path), '--always-delete'])
+        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path), '--always-delete'])
 
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(mock_unlink.call_count, 1)
@@ -157,11 +162,56 @@ class TestUnclutterDirectory(unittest.TestCase):
         mock_file.from_path.return_value = File(self.temp_dir, "test_file.txt", 100, 100)
 
         runner = click.testing.CliRunner()
-        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.file_path), '--never-delete'])
+        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path), '--never-delete'])
 
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(mock_unlink.call_count, 0)
 
+    @patch("unclutter_directory.unclutter_directory.FileMatcher")
+    @patch("unclutter_directory.unclutter_directory._load_rules")
+    @patch.object(Path, 'is_file')
+    @patch.object(Path, 'iterdir')
+    def test_organize_include_hidden(self, mock_iterdir, mock_is_file, mock_load_rules, mock_matcher):
+        # Setup
+        mock_load_rules.return_value = self.mock_rules
+        mock_matcher.return_value.match.return_value = self.mock_rules[0]
+
+        # Create a hidden file
+        hidden_file_path = Path(self.temp_dir) / ".hidden_file.txt"
+        hidden_file_path.touch()
+
+        mock_iterdir.return_value = [hidden_file_path]
+        mock_is_file.return_value = True
+
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path), "--include-hidden"])
+
+        self.assertEqual(result.exit_code, 0)
+        # Check that the match was called for the hidden file
+        self.assertEqual(mock_matcher.return_value.match.call_count, 1)
+
+    @patch("unclutter_directory.unclutter_directory.FileMatcher")
+    @patch("unclutter_directory.unclutter_directory._load_rules")
+    @patch.object(Path, 'is_file')
+    @patch.object(Path, 'iterdir')
+    def test_organize_not_including_hidden(self, mock_iterdir, mock_is_file, mock_load_rules, mock_matcher):
+        # Setup
+        mock_load_rules.return_value = self.mock_rules
+        mock_matcher.return_value.match.return_value = self.mock_rules[0]
+
+        # Create a hidden file
+        hidden_file_path = Path(self.temp_dir) / ".hidden_file.txt"
+        hidden_file_path.touch()
+
+        mock_iterdir.return_value = [hidden_file_path]
+        mock_is_file.return_value = True
+
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path)])
+
+        self.assertEqual(result.exit_code, 0)
+        # Check that the match was not called for the hidden file
+        self.assertEqual(mock_matcher.return_value.match.call_count, 0)
 
 if __name__ == "__main__":
     unittest.main()
