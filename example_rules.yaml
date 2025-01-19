@@ -12,6 +12,7 @@
     type: "move" # Move the files...
     target: "iso_files/"  # To the iso_files directory
   check_archive: true  # Search inside compressed archives for matching files
+  case_sensitive: true  # Use case sensitive matching. False by default
 
 - name: "Process other ISO files not matching the previous rule"
   conditions:

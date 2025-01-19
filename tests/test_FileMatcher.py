@@ -27,6 +27,9 @@ class TestFileMatcher(unittest.TestCase):
         self.rule_age_older = {"conditions": {"older": "1d"}}
         self.rule_age_newer = {"conditions": {"newer": "3d"}}
 
+    def tearDown(self):
+        pass
+
     def test_match_name_start(self):
         matcher = FileMatcher([self.rule_name_start])
         matched_rule = matcher.match(self.file1)
@@ -95,9 +98,57 @@ class TestFileMatcher(unittest.TestCase):
             self.assertIsNotNone(matched_rule)
             self.assertEqual(matched_rule, rule_check_archive)
 
-    def tearDown(self):
-        pass
+    def test_match_name_start_case_insensitive(self):
+        matcher = FileMatcher([self.rule_name_start])
+        self.file1.name = "EXAMPLE1.TXT"  
+        matched_rule = matcher.match(self.file1)
+        self.assertIsNotNone(matched_rule)
+        self.assertEqual(matched_rule, self.rule_name_start)
 
+    def test_match_name_end_case_insensitive(self):
+        matcher = FileMatcher([self.rule_name_end])
+        self.file1.name = "EXAMPLE2.TXT"  # Cambiando el nombre a mayúsculas
+        matched_rule = matcher.match(self.file1)
+        self.assertIsNotNone(matched_rule)
+        self.assertEqual(matched_rule, self.rule_name_end)
+
+    def test_match_name_contain_case_insensitive(self):
+        matcher = FileMatcher([self.rule_name_contain])
+        self.file1.name = "Example1.txt"  # Cambiando el nombre a mayúsculas
+        matched_rule = matcher.match(self.file1)
+        self.assertIsNotNone(matched_rule)
+        self.assertEqual(matched_rule, self.rule_name_contain)
+
+    def test_match_name_regex_case_insensitive(self):
+        matcher = FileMatcher([self.rule_name_regex])
+        self.file2.name = "EXAMPL2.ZIP"  # Cambiando el nombre a mayúsculas
+        matched_rule = matcher.match(self.file2)
+        self.assertIsNotNone(matched_rule)
+        self.assertEqual(matched_rule, self.rule_name_regex)
+
+    def test_match_name_start_case_sensitive(self):
+        self.file1.name = "EXAMPLE1.TXT"  
+        matcher = FileMatcher([{"conditions": {"start": "example"}, "case_sensitive": True}])
+        matched_rule = matcher.match(self.file1)
+        self.assertIsNone(matched_rule)
+
+    def test_match_name_end_case_sensitive(self):
+        matcher = FileMatcher([{"conditions": {"end": ".txt"}, "case_sensitive": True}])
+        self.file1.name = "EXAMPLE1.TXT"  
+        matched_rule = matcher.match(self.file1)
+        self.assertIsNone(matched_rule)  
+
+    def test_match_name_contain_case_sensitive(self):
+        matcher = FileMatcher([{"conditions": {"contain": "xample1"}, "case_sensitive": True}])
+        self.file1.name = "EXAMPLE1.TXT"  
+        matched_rule = matcher.match(self.file1)
+        self.assertIsNone(matched_rule)  # No debería coincidir con "Example1.txt"
+
+    def test_match_name_regex_case_sensitive(self):
+        matcher = FileMatcher([{"conditions": {"regex": "^exampl.*"}, "case_sensitive": True}])
+        self.file1.name = "EXAMPLE1.TXT"  
+        matched_rule = matcher.match(self.file1)
+        self.assertIsNone(matched_rule) 
 
 if __name__ == "__main__":
     unittest.main()

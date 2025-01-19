@@ -1,4 +1,5 @@
 import sys
+import re
 from typing import List
 import logging
 
@@ -55,7 +56,6 @@ def is_valid_rules_file(rules) -> List[str]:
 
     errors = []
 
-
     if not isinstance(rules, list):
         errors.append("Rules file must be a list of rules.")
         return errors
@@ -83,13 +83,16 @@ def is_valid_rules_file(rules) -> List[str]:
                     )
                 elif key == "regex":
                     try:
-                        import re
-
                         re.compile(value)
                     except re.error:
                         errors.append(
                             f"Rule #{i + 1}: Invalid regular expression '{value}'."
                         )
+
+        # Validate case_sensitive attribute
+        case_sensitive = rule.get("case_sensitive")
+        if case_sensitive is not None and not isinstance(case_sensitive, bool):
+            errors.append(f"Rule #{i + 1}: 'case_sensitive' must be a boolean (True or False).")
 
         # Validate action
         action = rule.get("action", {})
