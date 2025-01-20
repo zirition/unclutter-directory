@@ -1,6 +1,6 @@
 [project]
 name = "unclutter-directory"
-version = "0.9.1"
+version = "0.9.0"
 authors = [
   { name="zirition", email="zirition@zirition.com" },
 ]
