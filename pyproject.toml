@@ -1,13 +1,29 @@
 [project]
 name = "unclutter-directory"
-version = "0.1.0"
+version = "0.9.1"
+authors = [
+  { name="zirition", email="zirition@zirition.com" },
+]
 description = "Unclutter your directory with ease."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.8"
 dependencies = [
     "click>=8.1.8",
     "pyyaml>=6.0.2",
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+]
+license = {text = "MIT"}
+keywords = ["unclutter", "directory", "organize", "clean", "files", "folders"]
 
 [project.scripts]
 unclutter-directory = "unclutter_directory.unclutter_directory:cli"
+
+[project.urls]
+Homepage = "https://github.com/zirition/unclutter-directory"
+Issues = "https://github.com/zirition/unclutter-directory/issues"
