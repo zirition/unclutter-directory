@@ -1,7 +1,6 @@
 import shutil
 import tempfile
 import unittest
-import yaml
 import click.testing
 from pathlib import Path
 from unittest.mock import patch, mock_open
@@ -134,10 +133,31 @@ class TestUnclutterDirectory(unittest.TestCase):
         self.assertIn("Options --always-delete and --never-delete are mutually exclusive.", logger.output[0])
 
     @patch.object(Path, 'unlink')
+    @patch.object(Path, 'is_file')
+    @patch.object(Path, 'iterdir')
     @patch("unclutter_directory.unclutter_directory.File")
     @patch("unclutter_directory.unclutter_directory._load_rules")
     @patch("unclutter_directory.unclutter_directory.FileMatcher")
-    def test_always_delete(self, mock_matcher, mock_load_rules, mock_file, mock_unlink):
+    def test_always_delete(self, mock_matcher, mock_load_rules, mock_file, mock_iterdir, mock_is_file, mock_unlink):
+        mock_load_rules.return_value = self.mock_rules_delete
+        mock_matcher.return_value.match.side_effect = [
+            {"action": {"type": "delete"}},
+        ]
+        mock_iterdir.return_value = [Path(self.temp_dir) / "test_file.txt"]
+        mock_is_file.return_value = True
+        mock_file.from_path.return_value = File(self.temp_dir, "test_file.txt", 100, 100)
+
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path), '--always-delete'])
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(mock_unlink.call_count, 1)
+
+    @patch.object(Path, 'unlink')
+    @patch("unclutter_directory.unclutter_directory.File")
+    @patch("unclutter_directory.unclutter_directory._load_rules")
+    @patch("unclutter_directory.unclutter_directory.FileMatcher")
+    def test_never_delete_rulesfile(self, mock_matcher, mock_load_rules, mock_file, mock_unlink):
         mock_load_rules.return_value = self.mock_rules_delete
         mock_matcher.return_value.match.side_effect = [
             {"action": {"type": "delete"}},
@@ -148,7 +168,8 @@ class TestUnclutterDirectory(unittest.TestCase):
         result = runner.invoke(cli, ["organize", str(self.temp_dir), str(self.rules_path), '--always-delete'])
 
         self.assertEqual(result.exit_code, 0)
-        self.assertEqual(mock_unlink.call_count, 1)
+        self.assertEqual(mock_unlink.call_count, 0)
+
 
     @patch.object(Path, 'unlink')
     @patch("unclutter_directory.unclutter_directory.File")
@@ -236,6 +257,39 @@ class TestUnclutterDirectory(unittest.TestCase):
         # Check that the match was not called for the rules file
         self.assertEqual(mock_matcher.return_value.match.call_count, 1)  # Only for "file.txt"
 
+
+    def test_validate_alias_check(self):
+        # Simulate the `validate` command execution via its alias `check`
+        runner = click.testing.CliRunner()
+
+        with self.assertLogs('download_organizer', level='INFO') as logger:
+            result = runner.invoke(cli, ["check", str(self.rules_path)])
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Validation complete.", logger.output[0])
+
+
+    def test_abbreviations_for_commands(self):
+        # Test abbreviation for `validate` command
+        runner = click.testing.CliRunner()
+
+        with self.assertLogs('download_organizer', level='INFO') as logger:
+            result = runner.invoke(cli, ["val", str(self.rules_path)])
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Validation complete.", logger.output[0])
+
+        with self.assertLogs('download_organizer', level='INFO') as logger:
+            # Test abbreviation for `organize` command
+            result = runner.invoke(cli, ["org", str(self.temp_dir), str(self.rules_path)])
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Invalid rules file", logger.output[0])
+
+    def test_organize_execution_with_valid_directory(self):
+        valid_directory_path = self.temp_dir  # Using temp_dir as a valid directory
+        runner = click.testing.CliRunner()
+        with self.assertLogs('download_organizer', level='INFO') as logger:
+            result = runner.invoke(cli, [valid_directory_path, str(self.rules_path)])
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn("Invalid rules file", logger.output[0])
 
 if __name__ == "__main__":
     unittest.main()

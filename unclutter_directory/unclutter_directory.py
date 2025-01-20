@@ -2,6 +2,8 @@ import logging
 import click
 import yaml
 
+from unclutter_directory.UnclutterClickGroup import UnclutterClickGroup
+
 from .FileMatcher import FileMatcher
 from .File import File
 from .ActionExecutor import ActionExecutor
@@ -72,13 +74,13 @@ def check_if_should_delete(rule, rule_responses, file_path):
 
 
 # CLI with Click
-@click.group()
+@click.group(cls=UnclutterClickGroup)
 def cli():
     "Organize your directories with ease."
     pass
 
 
-@cli.command()
+@cli.command(default_command=True)
 @click.argument("target_dir", type=click.Path(exists=True, file_okay=False))
 @click.argument(
     "rules_file", type=click.Path(exists=True, dir_okay=False), required=False
@@ -115,7 +117,9 @@ def cli():
     default=False,
     help="Include hidden files (files starting with dot).",
 )
-def organize(target_dir, rules_file, dry_run, quiet, always_delete, never_delete, include_hidden):
+def organize(
+    target_dir, rules_file, dry_run, quiet, always_delete, never_delete, include_hidden
+):
     "Organize files in directory based on the file rules. (Default)"
 
     # Configure logging
@@ -151,8 +155,11 @@ def organize(target_dir, rules_file, dry_run, quiet, always_delete, never_delete
     rule_responses = {}
 
     # Traverse directory, optionally including hidden files
-    files = [f.name for f in Path(target_dir).iterdir() 
-             if f.is_file() and (include_hidden or not f.name.startswith('.'))]
+    files = [
+        f.name
+        for f in Path(target_dir).iterdir()
+        if f.is_file() and (include_hidden or not f.name.startswith("."))
+    ]
 
     # Ignore rules file
     if Path(target_dir) == Path(rules_file).parent:
@@ -189,7 +196,7 @@ def organize(target_dir, rules_file, dry_run, quiet, always_delete, never_delete
         executor.execute_action(file_path, target_dir)
 
 
-@cli.command()
+@cli.command(aliases=["check"])
 @click.argument("rules_file", type=click.Path(exists=True, dir_okay=False))
 def validate(rules_file):
     "Validate the structure and attributes of a RULES_FILE."
