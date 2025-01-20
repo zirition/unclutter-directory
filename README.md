@@ -1,3 +1,5 @@
+[![Tests](https://github.com/zirition/unclutter-directory/workflows/Python%20package/badge.svg)](https://github.com/zirition/unclutter-directory/actions?query=workflow%3APython%20package)
+
 # Unclutter Directory
 
 Unclutter Directory is a Python-based tool for organizing files in a directory according to specified rules. It allows you to move, delete, or compress files based on file conditions such as name patterns, size, and age.
@@ -93,6 +95,10 @@ Define rules in a YAML file. Here is an example:
   check_archive: true
 ```
 
+The file `example_rules.yaml` contains in the first rule all the options. 
+
+The rules are processed in order, the first rule that is a match is the rule used, so put first the more specific ones.
+
 ## Testing
 
 Run the unit tests to verify functionality:
@@ -111,4 +117,4 @@ This project is licensed under the MIT License.
 
 ## Contact
 
-For more information, contact [zirition@zirition.com].
+You can reach me at `owner of the repo` AT `owner of the repo` DOT `com`
