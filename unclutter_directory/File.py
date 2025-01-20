@@ -59,5 +59,5 @@ class ZipArchive(CompressedArchive):
                     for name in zipf.namelist()
                 ]
         except zipfile.BadZipFile:
-            logger.error(f"Error reading zip file: {archive_path}")
+            logger.error(f"❌ Error reading zip file: {archive_path}")
             return []

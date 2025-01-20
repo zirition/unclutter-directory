@@ -111,7 +111,7 @@ def is_valid_rules_file(rules) -> List[str]:
 
     # Report errors or success
     if errors:
-        logger.error("Validation failed with the following errors:")
+        logger.error("❌ Validation failed with the following errors:")
         for error in errors:
             logger.error(f"- {error}")
 

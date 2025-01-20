@@ -24,7 +24,7 @@ def _load_rules(rules_file):
         try:
             rules = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            logger.error(f"Error loading YAML: {e}")
+            logger.error(f"❌ Error loading YAML: {e}")
             return
 
     return rules
@@ -129,7 +129,7 @@ def organize(
     # Validate that --always-delete and --never-delete are not both set
     if always_delete and never_delete:
         logger.error(
-            "Options --always-delete and --never-delete are mutually exclusive."
+            "❌ Options --always-delete and --never-delete are mutually exclusive."
         )
         return
 
@@ -139,7 +139,7 @@ def organize(
             rules_file = str(default_rules)
         else:
             logger.error(
-                "No rules file specified and no .unclutter_rules.yaml found in target directory"
+                "❌ No rules file specified and no .unclutter_rules.yaml found in target directory"
             )
             return
 
@@ -147,7 +147,7 @@ def organize(
 
     # Check if rules file is valid
     if is_valid_rules_file(rules):
-        logger.error("Invalid rules file")
+        logger.error("❌ Invalid rules file")
         return
 
     matcher = FileMatcher(rules)

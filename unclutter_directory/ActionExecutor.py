@@ -42,7 +42,7 @@ class ActionExecutor:
                 target_path = Path(parent_path) / target / rel_path
             target_path = self.resolve_conflict(target_path)
             if not target_path:
-                logger.error(f"Failed to resolve conflict for {file_path}")
+                logger.error(f"❌ Failed to resolve conflict for {file_path}")
                 return
             os.makedirs(target_path.parent, exist_ok=True)
             file_path.rename(target_path)
@@ -53,7 +53,7 @@ class ActionExecutor:
                 file_path.unlink()
                 logger.info(f"Deleted file: {file_path}")
             except Exception as e:
-                logger.error(f"Error deleting file {file_path}: {e}")
+                logger.error(f"❌ Error deleting file {file_path}: {e}")
 
         elif action_type == "compress":
             try:
@@ -71,5 +71,5 @@ class ActionExecutor:
                     zipf.write(file_path, arcname=file_path.name)
                 logger.info(f"Compressed file: {file_path} to {target_path}")
             except Exception as e:
-                logger.error(f"Error compressing file {file_path}: {e}")
+                logger.error(f"❌ Error compressing file {file_path}: {e}")
 
