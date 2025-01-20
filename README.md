@@ -25,9 +25,9 @@ Using
 
 ## Installation
 
-1. Clone this repository:
+Install using `pip`:
    ```bash
-   git clone https://github.com/zirition/unclutter-directory.git
+   pip install unclutter-directory
    ```
 
 2. Change into the project directory:
