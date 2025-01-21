@@ -30,16 +30,6 @@ Install using `pip`:
    pip install unclutter-directory
    ```
 
-2. Change into the project directory:
-   ```bash
-   cd unclutter-directory
-   ```
-
-3. Install dependencies:
-   ```bash
-   uv sync
-   ```
-
 ## Usage
 
 ### Command-Line Interface

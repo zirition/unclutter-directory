@@ -2,7 +2,7 @@ import logging
 import click
 import yaml
 
-from unclutter_directory.UnclutterClickGroup import UnclutterClickGroup
+from click_supercharged import SuperchargedClickGroup   
 
 from .FileMatcher import FileMatcher
 from .File import File
@@ -74,7 +74,7 @@ def check_if_should_delete(rule, rule_responses, file_path):
 
 
 # CLI with Click
-@click.group(cls=UnclutterClickGroup)
+@click.group(cls=SuperchargedClickGroup)
 def cli():
     "Organize your directories with ease."
     pass
