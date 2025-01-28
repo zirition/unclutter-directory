@@ -19,6 +19,7 @@
     end: ".iso"  # Match files ending with .iso
   action:
     type: "compress" # Compress the files
+    target: . # Don't move the file
   check_archive: false
 
 - name: "Delete old logs"

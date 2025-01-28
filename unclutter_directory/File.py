@@ -1,4 +1,6 @@
 import zipfile
+import rarfile
+from rarfile import RarFile
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -29,9 +31,6 @@ class File:
 
 class CompressedArchive(ABC):
     @abstractmethod
-    def compress(self, file: File):
-        pass
-
     def get_files(self, file: File) -> List[File]:
         pass
 
@@ -39,11 +38,6 @@ class CompressedArchive(ABC):
 class ZipArchive(CompressedArchive):
     def __init__(self):
         pass
-
-    def compress(self, file: File):
-        archive_path = file.path / f"{file.name}.zip"
-        with zipfile.ZipFile(archive_path, "a") as zipf:
-            zipf.write(file.name)
 
     def get_files(self, file: File) -> List[File]:
         archive_path = file.path / file.name
@@ -61,3 +55,25 @@ class ZipArchive(CompressedArchive):
         except zipfile.BadZipFile:
             logger.error(f"❌ Error reading zip file: {archive_path}")
             return []
+
+class RarArchive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> List[File]:
+        archive_path = file.path / file.name
+        try:
+            with RarFile(archive_path) as rarf:
+                return [
+                    File(
+                        file.path,
+                        name,
+                        rarf.getinfo(name).date_time,
+                        rarf.getinfo(name).file_size,
+                    )
+                    for name in rarf.namelist()
+                ]
+        except rarfile.Error:
+            logger.error(f"❌ Error reading rar file: {archive_path}")
+            return []
+

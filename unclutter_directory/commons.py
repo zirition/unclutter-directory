@@ -1,7 +1,7 @@
 import sys
 import re
-from typing import List
 import logging
+from typing import List, Dict
 
 
 # Set up logging
@@ -11,109 +11,136 @@ logger = logging.getLogger("download_organizer")
 def get_logger():
     return logger
 
+# Constants for validation
+VALID_CONDITIONS = {
+    "start", "end", "contain", "regex",
+    "larger", "smaller", "older", "newer"
+}
+VALID_ACTIONS = {"move", "delete", "compress"}
+SIZE_UNITS = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3}
+TIME_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
+
 def parse_size(size_str: str) -> int:
-    # Convert size string to bytes
-    size_map = {"KB": 1024, "MB": 1024**2, "GB": 1024**3, "B": 1}
-    for unit, multiplier in size_map.items():
-        if size_str.upper().endswith(unit):
-            return int(size_str[: -len(unit)].strip()) * multiplier
-    return int(size_str)
+    """Parse human-readable size string to bytes."""
+    try:
+        match = re.fullmatch(r"\s*(\d+)\s*([KMG]?B?|B)\s*", size_str, re.IGNORECASE)
+        if not match:
+            raise ValueError(f"Invalid size format: '{size_str}'")
+            
+        value, unit = match.groups()
+        unit = unit.upper().replace("B", "") + "B" if unit else "B"
+        unit = "B" if unit == "B" else unit  # Handle standalone 'B'
+        
+        if unit not in SIZE_UNITS:
+            raise ValueError(f"Unsupported size unit: '{unit}'")
+            
+        return int(value) * SIZE_UNITS[unit]
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Size parsing failed: {str(e)}") from e
 
 def parse_time(time_str: str) -> int:
-    # Convert time string to seconds
-    time_map = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
-    for unit, multiplier in time_map.items():
-        if time_str.lower().endswith(unit):
-            return int(time_str[: -len(unit)].strip()) * multiplier
-    return int(time_str)
+    """Parse human-readable time string to seconds."""
+    try:
+        match = re.fullmatch(r"\s*(\d+)\s*([smhdw]?)\s*", time_str, re.IGNORECASE)
+        if not match:
+            raise ValueError(f"Invalid time format: '{time_str}'")
+            
+        value, unit = match.groups()
+        unit = unit.lower() if unit else "s"
+        
+        if unit not in TIME_UNITS:
+            raise ValueError(f"Unsupported time unit: '{unit}'")
+            
+        return int(value) * TIME_UNITS[unit]
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Time parsing failed: {str(e)}") from e
 
-def is_valid_rules_file(rules) -> List[str]:
-    def is_valid_size(value):
+def _validate_condition(rule_num: int, key: str, value: str) -> List[str]:
+    """Validate individual condition key-value pair."""
+    errors = []
+    
+    if key in {"larger", "smaller"}:
         try:
             parse_size(value)
-            return True
-        except ValueError:
-            return False
-
-    def is_valid_time(value):
+        except ValueError as e:
+            errors.append(f"Rule #{rule_num}: Invalid size value '{value}' for '{key}' - {str(e)}")
+            
+    elif key in {"older", "newer"}:
         try:
             parse_time(value)
-            return True
-        except ValueError:
-            return False
+        except ValueError as e:
+            errors.append(f"Rule #{rule_num}: Invalid time value '{value}' for '{key}' - {str(e)}")
+            
+    elif key == "regex":
+        try:
+            re.compile(value)
+        except re.error as e:
+            errors.append(f"Rule #{rule_num}: Invalid regex pattern '{value}' - {str(e)}")
+            
+    return errors
 
-    valid_conditions = {
-        "start",
-        "end",
-        "contain",
-        "regex",
-        "larger",
-        "smaller",
-        "older",
-        "newer",
-    }
-    valid_types = {"move", "delete", "compress"}
-
+def _validate_action(rule_num: int, action: Dict) -> List[str]:
+    """Validate action dictionary."""
     errors = []
+    action_type = action.get("type")
+    
+    if not action_type:
+        errors.append(f"Rule #{rule_num}: Action missing required 'type' field")
+    elif action_type not in VALID_ACTIONS:
+        errors.append(f"Rule #{rule_num}: Invalid action type '{action_type}'")
+    elif action_type in ["move", "compress"] and not action.get("target"):
+        errors.append(f"Rule #{rule_num}: '{action_type}' action requires 'target' parameter")
+        
+    if action.get("target") and not isinstance(action["target"], str):
+        errors.append(f"Rule #{rule_num}: Target must be a string")
+        
+    return errors
 
+def validate_rules_file(rules: List) -> List[str]:
+    """Validate complete rules file structure and contents."""
+    errors = []
+    
     if not isinstance(rules, list):
-        errors.append("Rules file must be a list of rules.")
-        return errors
-
-    for i, rule in enumerate(rules):
+        return ["Rules file must be a list of rule dictionaries"]
+        
+    for rule_num, rule in enumerate(rules, 1):
         if not isinstance(rule, dict):
-            errors.append(f"Rule #{i + 1} must be a dictionary.")
+            errors.append(f"Rule #{rule_num}: Must be a dictionary")
             continue
-
+            
         # Validate conditions
         conditions = rule.get("conditions", {})
         if not isinstance(conditions, dict):
-            errors.append(f"Rule #{i + 1}: 'conditions' must be a dictionary.")
-        else:
-            for key, value in conditions.items():
-                if key not in valid_conditions:
-                    errors.append(f"Rule #{i + 1}: Invalid condition '{key}'.")
-                elif key in {"larger", "smaller"} and not is_valid_size(value):
-                    errors.append(
-                        f"Rule #{i + 1}: Invalid size value '{value}' for condition '{key}'."
-                    )
-                elif key in {"older", "newer"} and not is_valid_time(value):
-                    errors.append(
-                        f"Rule #{i + 1}: Invalid time value '{value}' for condition '{key}'."
-                    )
-                elif key == "regex":
-                    try:
-                        re.compile(value)
-                    except re.error:
-                        errors.append(
-                            f"Rule #{i + 1}: Invalid regular expression '{value}'."
-                        )
-
-        # Validate case_sensitive attribute
+            errors.append(f"Rule #{rule_num}: 'conditions' must be a dictionary")
+            continue
+            
+        for key, value in conditions.items():
+            if key not in VALID_CONDITIONS:
+                errors.append(f"Rule #{rule_num}: Invalid condition '{key}'")
+                continue
+                
+            errors.extend(_validate_condition(rule_num, key, value))
+            
+        # Validate case sensitivity
         case_sensitive = rule.get("case_sensitive")
         if case_sensitive is not None and not isinstance(case_sensitive, bool):
-            errors.append(f"Rule #{i + 1}: 'case_sensitive' must be a boolean (True or False).")
-
+            errors.append(f"Rule #{rule_num}: 'case_sensitive' must be boolean")
+            
         # Validate action
         action = rule.get("action", {})
         if not isinstance(action, dict):
-            errors.append(f"Rule #{i + 1}: 'action' must be a dictionary.")
+            errors.append(f"Rule #{rule_num}: 'action' must be a dictionary")
         else:
-            action_type = action.get("type")
-            if action_type not in valid_types:
-                errors.append(f"Rule #{i + 1}: Invalid action type '{action_type}'.")
-            if action_type == "move" and not action.get("target"):
-                errors.append(f"Rule #{i + 1}: 'move' action requires a 'target'.")
-
+            errors.extend(_validate_action(rule_num, action))
+            
         # Validate check_archive
-        if "check_archive" in rule and not isinstance(rule["check_archive"], bool):
-            errors.append(f"Rule #{i + 1}: 'check_archive' must be a boolean.")
-
-    # Report errors or success
+        check_archive = rule.get("check_archive")
+        if check_archive is not None and not isinstance(check_archive, bool):
+            errors.append(f"Rule #{rule_num}: 'check_archive' must be boolean")
+            
     if errors:
-        logger.error("❌ Validation failed with the following errors:")
+        logger.error("Validation failed with %d errors:", len(errors))
         for error in errors:
-            logger.error(f"- {error}")
-
+            logger.error("• %s", error)
+            
     return errors
-

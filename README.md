@@ -4,7 +4,9 @@
 
 Unclutter Directory is a Python-based tool for organizing files in a directory according to specified rules. It allows you to move, delete, or compress files based on file conditions such as name patterns, size, and age.
 
-The rules are defined in a YAML file used as a parameter.
+It also can search within `zip` and `rar` archive for files that matches the rules.
+
+The rules are defined in a simple YAML file used as a parameter.
 
 ## Features
 - **Move**: Move files to a specified directory.
@@ -22,6 +24,7 @@ Using
 - Python 3.13 or higher
 - [Click](https://pypi.org/project/click/) 
 - [PyYAML](https://pypi.org/project/PyYAML/) 
+- [rarfile](https://pypi.org/project/rarfile/)
 
 ## Installation
 
@@ -33,8 +36,6 @@ Install using `pip`:
 ## Usage
 
 ### Command-Line Interface
-
-The project includes a CLI utility powered by Click. You can run the tool using the following commands.
 
 #### Organize
 

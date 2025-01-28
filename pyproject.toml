@@ -1,6 +1,6 @@
 [project]
 name = "unclutter-directory"
-version = "0.9.2"
+version = "0.9.3"
 authors = [
   { name="zirition", email="zirition@zirition.com" },
 ]
@@ -11,6 +11,7 @@ dependencies = [
     "click>=8.1.8",
     "click-supercharged>=1.0.0",
     "pyyaml>=6.0.2",
+    "rarfile>=4.2",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

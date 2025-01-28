@@ -1,4 +1,4 @@
-import os
+import shutil
 from typing import Dict
 from pathlib import Path
 import zipfile
@@ -12,7 +12,7 @@ class ActionExecutor:
         self.action = action
 
     def resolve_conflict(self, target_path: Path) -> Path:
-        "Resolve filename conflicts by adding a suffix."
+        """Resolve filename conflicts by adding a numerical suffix."""
         if not target_path.exists():
             return target_path
 
@@ -25,51 +25,75 @@ class ActionExecutor:
                 return new_path
             suffix += 1
 
+    def _get_target_directory(self, target: str, parent_path: Path) -> Path:
+        """Resolve the target directory path, accounting for absolute/relative paths."""
+        target_path = Path(target)
+        if target_path.is_absolute():
+            return target_path
+        else:
+            return parent_path / target
+
+    def _handle_move(self, file_path: Path, parent_path: Path, target: str):
+        """Handle moving a file to a target directory."""
+        rel_path = file_path.relative_to(parent_path)
+        target_dir = self._get_target_directory(target, parent_path)
+        target_path = target_dir / rel_path
+        target_path = self.resolve_conflict(target_path)
+        
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(file_path), str(target_path))
+        logger.info(f"Moved to {target_path}")
+
+    def _handle_delete(self, file_path: Path):
+        """Handle file deletion."""
+        try:
+            file_path.unlink()
+            logger.info(f"Deleted file: {file_path}")
+        except Exception as e:
+            logger.error(f"❌ Error deleting file {file_path}: {e}")
+
+    def _handle_compress(self, file_path: Path, parent_path: Path, target: str):
+        """Handle file compression into a target directory."""
+        forbidden_extensions = {'.zip', '.rar', '.7z', '.gz', '.bz2', '.tgz', '.xz'}
+        if file_path.suffix.lower() in forbidden_extensions:
+            logger.info(f"Skipping compression for forbidden file type: {file_path}")
+            return
+
+        try:
+            target_dir = self._get_target_directory(target, parent_path)
+            target_dir.mkdir(parents=True, exist_ok=True)
+            
+            zip_name = f"{file_path.stem}.zip"
+            target_path = target_dir / zip_name
+            target_path = self.resolve_conflict(target_path)
+            
+            with zipfile.ZipFile(target_path, "w") as zipf:
+                zipf.write(file_path, arcname=file_path.name)
+            logger.info(f"Compressed file: {file_path} to {target_path}")
+
+            file_path.unlink()
+        except Exception as e:
+            logger.error(f"❌ Error compressing file {file_path}: {e}")
+
     def execute_action(self, file_path: Path, parent_path: Path):
         action_type = self.action.get("type")
         target = self.action.get("target")
 
-        if not action_type or (action_type in ["move"] and not target):
-            logger.warning(f"Invalid action for file {file_path}")
+        # Validate action structure
+        valid_actions = ["move", "delete", "compress"]
+        if not action_type or action_type not in valid_actions:
+            logger.warning(f"Invalid action type for file {file_path}")
+            return
+        if action_type in ["move", "compress"] and not target:
+            logger.warning(f"Missing target for {action_type} action on {file_path}")
             return
 
-        # Execute actions
-        if action_type == "move":
-            rel_path = file_path.relative_to(parent_path)
-            if Path(target).is_absolute():
-                target_path = Path(target) / rel_path
-            else:
-                target_path = Path(parent_path) / target / rel_path
-            target_path = self.resolve_conflict(target_path)
-            if not target_path:
-                logger.error(f"❌ Failed to resolve conflict for {file_path}")
-                return
-            os.makedirs(target_path.parent, exist_ok=True)
-            file_path.rename(target_path)
-            logger.info(f"Moved to {target_path}")
-
-        elif action_type == "delete":
-            try:
-                file_path.unlink()
-                logger.info(f"Deleted file: {file_path}")
-            except Exception as e:
-                logger.error(f"❌ Error deleting file {file_path}: {e}")
-
-        elif action_type == "compress":
-            try:
-                # Check if the file extension is already one of the compressed archive types
-                forbidden_extensions = {'.zip', '.rar', '.7z', '.gz', '.bz2', '.tgz', '.xz'}
-                file_extension = file_path.suffix.lower()
-                
-                if file_extension in forbidden_extensions:
-                    logger.info(f"Skipping compression for file with forbidden extension: {file_path}")
-                    return
-
-                target_path = Path(target) / f"{file_path.stem}.zip"
-                target_path = self.resolve_conflict(target_path)
-                with zipfile.ZipFile(target_path, "w") as zipf:
-                    zipf.write(file_path, arcname=file_path.name)
-                logger.info(f"Compressed file: {file_path} to {target_path}")
-            except Exception as e:
-                logger.error(f"❌ Error compressing file {file_path}: {e}")
-
+        try:
+            if action_type == "move":
+                self._handle_move(file_path, parent_path, Path(target))
+            elif action_type == "delete":
+                self._handle_delete(file_path)
+            elif action_type == "compress":
+                self._handle_compress(file_path, parent_path, Path(target))
+        except Exception as e:
+            logger.error(f"❌ Unexpected error processing {file_path}: {e}")

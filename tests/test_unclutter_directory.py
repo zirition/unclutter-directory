@@ -49,7 +49,7 @@ class TestUnclutterDirectory(unittest.TestCase):
     @patch("unclutter_directory.unclutter_directory.FileMatcher")
     @patch("unclutter_directory.unclutter_directory.ActionExecutor")
     @patch("unclutter_directory.unclutter_directory._load_rules")
-    @patch("unclutter_directory.unclutter_directory.is_valid_rules_file")
+    @patch("unclutter_directory.unclutter_directory.validate_rules_file")
     def test_organize_dry_run(
         self, mock_valid_rules, mock_load_rules, mock_executor, mock_matcher
     ):
@@ -68,7 +68,7 @@ class TestUnclutterDirectory(unittest.TestCase):
         mock_executor.return_value.execute_action.assert_not_called()
 
     @patch("unclutter_directory.unclutter_directory._load_rules")
-    @patch("unclutter_directory.unclutter_directory.is_valid_rules_file")
+    @patch("unclutter_directory.unclutter_directory.validate_rules_file")
     def test_organize_invalid_rules(self, mock_valid_rules, mock_load_rules):
         # Setup
         mock_load_rules.return_value = self.mock_rules

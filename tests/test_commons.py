@@ -1,6 +1,6 @@
 import unittest
 
-from unclutter_directory.commons import parse_size, parse_time, is_valid_rules_file
+from unclutter_directory.commons import parse_size, parse_time, validate_rules_file
 
 class TestCommons(unittest.TestCase):
     def test_parse_size(self):
@@ -39,17 +39,17 @@ class TestCommons(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_time("invalid")
 
-    def test_is_valid_rules_file(self):
+    def test_validate_rules_file(self):
         # Test valid rules
         valid_rules = [{
             "conditions": {"larger": "1KB", "newer": "1d"},
             "action": {"type": "move", "target": "/path/to/target"},
             "check_archive": True
         }]
-        self.assertEqual(is_valid_rules_file(valid_rules), [])
+        self.assertEqual(validate_rules_file(valid_rules), [])
         
         # Test invalid rules format
-        self.assertTrue(len(is_valid_rules_file("not a list")) > 0)
+        self.assertTrue(len(validate_rules_file("not a list")) > 0)
         
         # Test invalid rule structure
         invalid_rules = [
@@ -65,7 +65,7 @@ class TestCommons(unittest.TestCase):
             {"check_archive": "not a bool"}
         ]
         for rule in invalid_rules:
-            self.assertTrue(len(is_valid_rules_file([rule])) > 0)
+            self.assertTrue(len(validate_rules_file([rule])) > 0)
 
     def test_is_valid_rule_conditions(self):
         valid_rules = [
@@ -79,7 +79,7 @@ class TestCommons(unittest.TestCase):
             },
             {
                 "conditions": {"regex": "[a-z]+"},
-                "action": {"type": "compress"}
+                "action": {"type": "compress", "target": "."}
             }
         ]
 
@@ -98,11 +98,11 @@ class TestCommons(unittest.TestCase):
         ]
 
         for i, rule in enumerate(valid_rules):
-            errors = is_valid_rules_file([rule])
+            errors = validate_rules_file([rule])
             self.assertEqual(errors, [], f"Rule #{i + 1} should be valid")
 
         for i, rule in enumerate(invalid_rules):
-            errors = is_valid_rules_file([rule])
+            errors = validate_rules_file([rule])
             self.assertTrue(len(errors) > 0, f"Rule #{i + 1} should be invalid")
             self.assertIn("Rule #1", errors[0])
 
@@ -110,7 +110,7 @@ class TestCommons(unittest.TestCase):
         valid_actions = [
             {"type": "move", "target": "/path/to/target"},
             {"type": "delete"},
-            {"type": "compress"}
+            {"type": "compress", "target": "."}
         ]
 
         invalid_actions = [
@@ -126,12 +126,12 @@ class TestCommons(unittest.TestCase):
 
         for i, action in enumerate(valid_actions):
             rule = {"conditions": {}, "action": action}
-            errors = is_valid_rules_file([rule])
+            errors = validate_rules_file([rule])
             self.assertEqual(errors, [], f"Action #{i + 1} should be valid")
 
         for i, action in enumerate(invalid_actions):
             rule = {"conditions": {}, "action": action}
-            errors = is_valid_rules_file([rule])
+            errors = validate_rules_file([rule])
             self.assertTrue(len(errors) > 0, f"Action #{i + 1} should be invalid")
             if action.get("type") == "move":
                 self.assertIn("'target'", errors[0])
@@ -148,13 +148,13 @@ class TestCommons(unittest.TestCase):
         ]
 
         for i, rule in enumerate(valid_rules):
-            errors = is_valid_rules_file([rule])
+            errors = validate_rules_file([rule])
             self.assertEqual(errors, [], f"Rule #{i + 1} should be valid")
 
         for i, rule in enumerate(invalid_rules):
-            errors = is_valid_rules_file([rule])
+            errors = validate_rules_file([rule])
             self.assertTrue(len(errors) > 0, f"Rule #{i + 1} should be invalid")
-            self.assertIn("must be a boolean", errors[0])
+            self.assertIn("must be boolean", errors[0])
 
 
 if __name__ == "__main__":

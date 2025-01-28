@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from .File import File, CompressedArchive, ZipArchive
+from .File import File, CompressedArchive, RarArchive, ZipArchive
 
 from .commons import parse_size, parse_time
 
@@ -15,7 +15,9 @@ class FileMatcher:
 
         for rule in self.rules:
             case_sensitive = rule.get("case_sensitive", False)
-            if self._file_matches_conditions(file, rule.get("conditions", {}), case_sensitive):
+            if self._file_matches_conditions(
+                file, rule.get("conditions", {}), case_sensitive
+            ):
                 return rule
 
             # If the check_archive condition is set, check the contents of the archive it the rule apply
@@ -30,11 +32,14 @@ class FileMatcher:
     def _get_archive_manager(self, file: File) -> CompressedArchive:
         if file.name.endswith(".zip"):
             return ZipArchive()
+        elif file.name.endswith(".rar"):
+            return RarArchive()
         return None
 
-    def _file_matches_conditions(self, file: File, conditions: Dict, case_sensitive: bool) -> bool:
+    def _file_matches_conditions(
+        self, file: File, conditions: Dict, case_sensitive: bool
+    ) -> bool:
         name = file.name
-
 
         if "start" in conditions:
             if case_sensitive:

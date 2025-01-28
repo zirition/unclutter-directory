@@ -7,7 +7,7 @@ from click_supercharged import SuperchargedClickGroup
 from .FileMatcher import FileMatcher
 from .File import File
 from .ActionExecutor import ActionExecutor
-from .commons import is_valid_rules_file
+from .commons import validate_rules_file
 
 from pathlib import Path
 
@@ -146,7 +146,7 @@ def organize(
     rules = _load_rules(rules_file)
 
     # Check if rules file is valid
-    if is_valid_rules_file(rules):
+    if validate_rules_file(rules):
         logger.error("❌ Invalid rules file")
         return
 
@@ -190,6 +190,7 @@ def organize(
             if not always_delete and not check_if_should_delete(
                 rule, rule_responses, file_path
             ):
+                logger.info(f"Skipping deletion of {file_path}")
                 continue
 
         executor = ActionExecutor(action)
@@ -203,7 +204,7 @@ def validate(rules_file):
 
     rules = _load_rules(rules_file)
 
-    is_valid_rules_file(rules)
+    validate_rules_file(rules)
     logger.info("Validation complete.")
 
 
