@@ -1,111 +1,177 @@
+[![PyPI Version](https://img.shields.io/pypi/v/unclutter-directory)](https://pypi.org/project/unclutter-directory/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/unclutter-directory)](https://pypi.org/project/unclutter-directory/)
 [![Tests](https://github.com/zirition/unclutter-directory/workflows/Python%20package/badge.svg)](https://github.com/zirition/unclutter-directory/actions?query=workflow%3APython%20package)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-# Unclutter Directory
 
-Unclutter Directory is a Python-based tool for organizing files in a directory according to specified rules. It allows you to move, delete, or compress files based on file conditions such as name patterns, size, and age.
+# Unclutter Directory 🗂️
 
-It also can search within `zip` and `rar` archive for files that matches the rules.
+A smart file organization tool that automatically sorts your files and directories based on customizable rules.
 
-The rules are defined in a simple YAML file used as a parameter.
+## Features ✨
 
-## Features
-- **Move**: Move files to a specified directory.
-- **Delete**: Permanently remove files.
-- **Compress**: Compress files into a `.zip` archive.
+- **Multi-Action Support**
+  - 🚚 Move files/directories to specific locations
+  - 🗑️ Delete obsolete items
+  - 📦 Compress files/directories to ZIP archives
+  - 🔍 Search inside ZIP/RAR archives for matching files
 
-Using 
-- **Customizable Rules**: Define conditions like name patterns, file size, and age for performing actions.
-- **Dry Run Mode**: Simulate actions without making actual changes to verify intended effect.
-- **Support for Hidden Files**: Option to include hidden files (files starting with a dot).
-- **Flexible Deletion Options**: Choose to always delete matched files or never delete them.
+- **Advanced Matching**
+  - Name patterns (starts/ends with, contains, regex)
+  - File size thresholds (larger/smaller than)
+  - Age conditions (older/newer than)
+  - Directory-specific rules (`is_directory` flag)
+  - Case-sensitive/insensitive matching
 
-## Requirements
+- **Safety & Control**
+  - 🧪 Dry-run simulation mode
+  - 🔒 Interactive deletion prompts
+  - 📝 Comprehensive logging
 
-- Python 3.13 or higher
-- [Click](https://pypi.org/project/click/) 
-- [PyYAML](https://pypi.org/project/PyYAML/) 
-- [rarfile](https://pypi.org/project/rarfile/)
+## Installation 📦
 
-## Installation
-
-Install using `pip`:
-   ```bash
-   pip install unclutter-directory
+  ```bash
+  pip install unclutter-directory
    ```
 
-## Usage
+## Usage 🚀
 
-### Command-Line Interface
-
-#### Organize
-
-Organize files in a directory based on your rules:
+### Basic Command Structure
 
 ```bash
-python -m unclutter-directory organize <target_dir> [<rules_file>] [--dry-run] [--quiet] [--always-delete] [--never-delete] [--include-hidden]
+unclutter organize [OPTIONS] TARGET_DIR [RULES_FILE]
+unclutter validate [OPTIONS] RULES_FILE
 ```
 
-- `<target_dir>`: Directory path where the files are to be organized.
-- `<rules_file>`: Path to the YAML file containing organization rules. If omitted, it searches for `.unclutter_rules.yaml` in `<target_dir>`.
-- `--dry-run`: Optional flag for simulating the actions without making changes.
-- `--quiet`: Optional flag to suppress non-error messages.
-- `--always-delete`: Optional flag to always delete matched files without confirmation.
-- `--never-delete`: Optional flag to never delete matched files.
-- `--include-hidden`: Optional flag to include hidden files (files starting with a dot).
+### Common Options
 
-### Validate
+| Option           | Description                             |
+|------------------|-----------------------------------------|
+| --dry-run        | Simulate actions without making changes |
+| --quiet	         | Suppress non-error messages             |
+| --include-hidden | Process hidden files/directories        |
+| --always-delete  | Skip confirmation for deletions         |
+| --never-delete   | Prevent all deletion actions            |
 
-Validate the structure and attributes of a rules file:
+### Example Workflow
 
+1. Create rules file (`cleanup_rules.yaml`):
+```yaml
+- name: "Cleanup Old Downloads"
+  conditions:
+    older: "30d"
+  action:
+    type: delete
+
+- name: "Organize Media Files"
+  is_directory: false
+  conditions:
+    regex: "\.(mp4|mov|avi)$"
+  action:
+    type: move
+    target: "media/"
+
+- name: "Archive Projects"
+  is_directory: true
+  conditions:
+    end: "_project"
+    newer: "7d"
+  action:
+    type: compress
+    target: "archives/"
+```
+
+2. Run organization:
 ```bash
-python -m unclutter-directory validate <rules_file>
+unclutter organize ~/Downloads cleanup_rules.yaml --dry-run
 ```
+Apply changes:
+```bash
+unclutter organize ~/Downloads cleanup_rules.yaml
+```
+## Rules Configuration ⚙️
 
-- `<rules_file>`: Path to the YAML file that contains organization rules.
-
-### Rules File
-
-Define rules in a YAML file. Here is an example:
+### Rule Structure
 
 ```yaml
-- name: "Process STL Files"
+- name: "Rule Name"
+  is_directory: false  # Optional (default: false)
+  case_sensitive: false  # Optional (default: false)
+  check_archive: true  # Optional (default: false)
   conditions:
-    end: ".stl"
+    start: "report_"
+    end: ".pdf"
+    larger: "10MB"
+    older: "2w"
   action:
-    type: "move"
-    target: "stl_files/"
-  check_archive: true
-
-- name: "Process ISO Files"
-  conditions:
-    end: ".iso"
-    older: "2d"
-  action:
-    type: "move"
-    target: "iso_files/"
-  check_archive: true
+    type: move
+    target: "documents/"
 ```
 
-The file `example_rules.yaml` contains in the first rule all the options. 
+### Condition Types
 
-The rules are processed in order, the first rule that is a match is the rule used, so put first the more specific ones.
+| Condition | Format           | Examples                |
+|-----------|------------------|-------------------------|
+| Time      | `<number><unit>` | `30d`, `2h`, `15m`      |
+| Size      | `<number><unit>` | `500MB`, `1GB`, `100KB` |
+| Name      | String/Regex     | `start: "temp_"`        |
+
+Time Units: `s` (seconds), `m` (minutes), `h` (hours), `d` (days), `w` (weeks)
+
+Size Units: `B`, `KB`, `MB`, `GB`
+
+## Advanced Usage 🔧
+
+### Archive Handling
+
+Search inside compressed files:
+
+```yaml
+- name: "Find Secret Documents"
+  check_archive: true
+  conditions:
+    regex: "top_secret.*\.docx$"
+  action:
+    type: move
+    target: "classified/"
+```
+
+### Directory Compression
+
+```yaml
+- name: "Archive Old Projects"
+  is_directory: true
+  conditions:
+    older: "6M"
+  action:
+    type: compress
+    target: "project_archives/"
+```
+
+## Development 👩💻
+
+### Project Setup
+
+```bash
+git clone https://github.com/zirition/unclutter-directory
+cd unclutter-directory
+python -m venv .venv
+source .venv/bin/activate  # Linux/MacOS
+# .venv\Scripts\activate  # Windows
+
+pip install -e .[dev]  # Install with development dependencies
+```
 
 ## Testing
-
-Run the unit tests to verify functionality:
 
 ```bash
 python -m unittest discover tests
 ```
 
-## Contributing
+## License 📄
 
-Contributions are welcome! 
+MIT License
 
-## License
+## Support 💬
 
-This project is licensed under the MIT License.
-
-## Contact
-
-You can reach me at `owner of the repo` AT `owner of the repo` DOT `com`
+For issues and feature requests, please [open an issue](https://github.com/zirition/unclutter-directory/issues).

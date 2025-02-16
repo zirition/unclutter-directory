@@ -1,3 +1,4 @@
+import os
 import shutil
 from typing import Dict
 from pathlib import Path
@@ -45,35 +46,53 @@ class ActionExecutor:
         logger.info(f"Moved to {target_path}")
 
     def _handle_delete(self, file_path: Path):
-        """Handle file deletion."""
+        """Handle file/directory deletion"""
         try:
-            file_path.unlink()
-            logger.info(f"Deleted file: {file_path}")
+            if file_path.is_dir():
+                shutil.rmtree(file_path)
+            else:
+                file_path.unlink()
+            logger.info(f"Deleted {'directory' if file_path.is_dir() else 'file'}: {file_path}")
         except Exception as e:
-            logger.error(f"❌ Error deleting file {file_path}: {e}")
+            logger.error(f"❌ Error deleting {file_path}: {e}")
 
     def _handle_compress(self, file_path: Path, parent_path: Path, target: str):
-        """Handle file compression into a target directory."""
-        forbidden_extensions = {'.zip', '.rar', '.7z', '.gz', '.bz2', '.tgz', '.xz'}
-        if file_path.suffix.lower() in forbidden_extensions:
-            logger.info(f"Skipping compression for forbidden file type: {file_path}")
+        """Handle compression into a target ZIP file"""
+        if file_path.is_file() and file_path.suffix.lower() in {'.zip', '.rar', '.7z'}:
+            logger.info(f"Skipping compression for archive file: {file_path}")
             return
 
-        try:
-            target_dir = self._get_target_directory(target, parent_path)
-            target_dir.mkdir(parents=True, exist_ok=True)
-            
-            zip_name = f"{file_path.stem}.zip"
-            target_path = target_dir / zip_name
-            target_path = self.resolve_conflict(target_path)
-            
-            with zipfile.ZipFile(target_path, "w") as zipf:
-                zipf.write(file_path, arcname=file_path.name)
-            logger.info(f"Compressed file: {file_path} to {target_path}")
+        target_dir = self._get_target_directory(target, parent_path)
+        target_dir.mkdir(parents=True, exist_ok=True)
 
-            file_path.unlink()
+        # Create zip name based on directory/file name
+        zip_name = f"{file_path.stem if file_path.is_file() else file_path.name}.zip"
+        target_path = target_dir / zip_name
+        target_path = self.resolve_conflict(target_path)
+
+        try:
+            with zipfile.ZipFile(target_path, "w") as zipf:
+                if file_path.is_dir():
+                    # Compress entire directory
+                    for file in file_path.rglob("*"):
+                        if file.is_file():
+                            arcname = file.relative_to(file_path.parent)
+                            zipf.write(file, arcname=arcname)
+                        if file.is_dir():
+                            arcname = file.relative_to(file_path.parent)
+                            zipf.writestr(str(arcname) + '/', '')
+                else:
+                    zipf.write(file_path, arcname=file_path.name)
+                    
+            # Remove original after compression
+            if file_path.is_dir():
+                shutil.rmtree(file_path)
+            else:
+                file_path.unlink()
+                
+            logger.info(f"Compressed {file_path} to {target_path}")
         except Exception as e:
-            logger.error(f"❌ Error compressing file {file_path}: {e}")
+            logger.error(f"❌ Error compressing {file_path}: {e}")
 
     def execute_action(self, file_path: Path, parent_path: Path):
         action_type = self.action.get("type")

@@ -21,6 +21,7 @@ class TestActionExecutor(unittest.TestCase):
         for item in structure:
             path = self.temp_dir/item
             if path.suffix:  # is file
+                path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
             else:  # is directory
                 path.mkdir(parents=True)
@@ -76,7 +77,7 @@ class TestActionExecutor(unittest.TestCase):
         self.assertFalse(self.test_file.exists())
 
     def test_compress_basic(self):
-        """Compresión básica sin conflictos"""
+        """Basic compression without conflicts"""
         target = self.temp_dir/"compressed"
         action = {"type": "compress", "target": str(target)}
         
@@ -121,7 +122,7 @@ class TestActionExecutor(unittest.TestCase):
             file.touch()
             with self.subTest(file=file), self.assertLogs(level='INFO') as logs:
                 ActionExecutor({"type": "compress", "target": str(self.temp_dir)}).execute_action(file, self.temp_dir)
-                self.assertIn("Skipping compression for forbidden file type", logs.output[0])
+                self.assertIn("Skipping compression for archive file", logs.output[0])
                 self.assertFalse((self.temp_dir/(file.name + ".zip")).exists())
 
     def test_compress_non_existent_directory(self):
@@ -172,7 +173,102 @@ class TestActionExecutor(unittest.TestCase):
             
             mock_unlink.side_effect = Exception("Simulated error")
             ActionExecutor({"type": "delete"}).execute_action(self.test_file, self.temp_dir)
-            self.assertIn("Error deleting file", logs.output[0])
+            self.assertIn("Error deleting ", logs.output[0])
+
+    def test_delete_directory(self):
+        """Delete directory with nested content"""
+        test_dir = self.temp_dir/"test_dir"
+        self._create_test_structure([
+            "test_dir/file1.txt",
+            "test_dir/subdir/file2.txt"
+        ])
+        
+        ActionExecutor({"type": "delete"}).execute_action(test_dir, self.temp_dir)
+        self.assertFalse(test_dir.exists())
+
+    def test_compress_directory(self):
+        """Compress directory with nested structure"""
+        test_dir = self.temp_dir/"to_compress"
+        self._create_test_structure([
+            "to_compress/file.txt",
+            "to_compress/subdir/nested.txt"
+        ])
+        
+        ActionExecutor({"type": "compress", "target": "archives"}).execute_action(test_dir, self.temp_dir)
+        
+        zip_path = self.temp_dir/"archives"/"to_compress.zip"
+        with zipfile.ZipFile(zip_path) as z:
+            self.assertIn('to_compress/file.txt', z.namelist())
+            self.assertIn('to_compress/subdir/nested.txt', z.namelist())
+        self.assertFalse(test_dir.exists())
+
+    def test_compress_directory_conflict(self):
+        """Handle directory compression naming conflicts"""
+        target = self.temp_dir/"archives"
+        target.mkdir()
+        (target/"test_dir.zip").touch()
+        
+        test_dir = self.temp_dir/"test_dir"
+        test_dir.mkdir()
+        
+        ActionExecutor({"type": "compress", "target": "archives"}).execute_action(test_dir, self.temp_dir)
+        self.assertTrue((target/"test_dir_1.zip").exists())
+
+    def test_move_directory(self):
+        """Move directory with contents"""
+        test_dir = self.temp_dir/"source"
+        self._create_test_structure(["source/data.txt"])
+        
+        ActionExecutor({"type": "move", "target": "dest"}).execute_action(test_dir, self.temp_dir)
+        
+        moved = self.temp_dir/"dest"/"source"
+        self.assertTrue(moved.exists())
+        self.assertTrue((moved/"data.txt").exists())
+        self.assertFalse(test_dir.exists())
+
+    def test_compress_directory_with_archives(self):
+        """Compress directory containing archive files"""
+        test_dir = self.temp_dir/"mixed"
+        self._create_test_structure([
+            "mixed/data.zip",
+            "mixed/backup.rar"
+        ])
+        
+        ActionExecutor({"type": "compress", "target": "output"}).execute_action(test_dir, self.temp_dir)
+        
+        with zipfile.ZipFile(self.temp_dir/"output"/"mixed.zip") as z:
+            self.assertIn('mixed/data.zip', z.namelist())
+
+    def test_directory_name_with_archive_extension(self):
+        """Compress directory named like an archive file"""
+        test_dir = self.temp_dir/"fake.zip"
+        test_dir.mkdir()
+        (test_dir/"file.txt").touch()
+        
+        ActionExecutor({"type": "compress", "target": "output"}).execute_action(test_dir, self.temp_dir)
+        self.assertTrue((self.temp_dir/"output"/"fake.zip.zip").exists())
+
+    def test_empty_directory_compression(self):
+        """Compress empty directory"""
+        test_dir = self.temp_dir/"empty"
+        test_dir.mkdir()
+        
+        ActionExecutor({"type": "compress", "target": "archives"}).execute_action(test_dir, self.temp_dir)
+        zip_path = self.temp_dir/"archives"/"empty.zip"
+        self.assertTrue(zip_path.exists())
+
+    def test_compress_directory_with_empty_subdirectory(self):
+        """Compress directory containing an empty subdirectory"""
+        test_dir = self.temp_dir/"dir"
+        self._create_test_structure([
+            "dir/empty/",
+        ])
+        
+        ActionExecutor({"type": "compress", "target": "output"}).execute_action(test_dir, self.temp_dir)
+        
+        with zipfile.ZipFile(self.temp_dir/"output"/"dir.zip") as z:
+            self.assertIn('dir/empty/', z.namelist())
+
 
 if __name__ == "__main__":
     unittest.main(failfast=True)

@@ -29,3 +29,12 @@
   action:
     type: "delete" # Delete the files
   check_archive: false
+
+- name: "Compress old large directories"
+  is_directory: true
+  conditions:
+    larger: "500MB"
+    older: "30d"
+  action:
+    type: "compress"
+    target: "archives"

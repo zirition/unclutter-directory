@@ -15,6 +15,11 @@ class FileMatcher:
 
         for rule in self.rules:
             case_sensitive = rule.get("case_sensitive", False)
+            is_directory_rule = rule.get("is_directory", False)
+
+            if file.is_directory != is_directory_rule:
+                continue
+
             if self._file_matches_conditions(
                 file, rule.get("conditions", {}), case_sensitive
             ):

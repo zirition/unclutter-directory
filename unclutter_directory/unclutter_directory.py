@@ -1,211 +1,200 @@
 import logging
+from pathlib import Path
+from typing import Dict, List, Optional
+
 import click
 import yaml
-
-from click_supercharged import SuperchargedClickGroup   
-
-from .FileMatcher import FileMatcher
-from .File import File
-from .ActionExecutor import ActionExecutor
-from .commons import validate_rules_file
-
-from pathlib import Path
+from click_supercharged import SuperchargedClickGroup
 
 from unclutter_directory import commons
+from .ActionExecutor import ActionExecutor
+from .File import File
+from .FileMatcher import FileMatcher
+from .commons import validate_rules_file
 
 logger = commons.get_logger()
 
-
-def _load_rules(rules_file):
-    """
-    Load rules from a YAML file.
-    """
-    with open(rules_file, "r") as f:
-        try:
-            rules = yaml.safe_load(f)
-        except yaml.YAMLError as e:
-            logger.error(f"❌ Error loading YAML: {e}")
-            return
-
-    return rules
+# Type aliases for clarity
+Rule = Dict
+Rules = List[Rule]
+RuleResponses = Dict[int, str]
 
 
-def prompt_user_for_action(file_path):
-    """
-    Prompt the user for an action if the rule is 'delete'.
-    """
-    valid_responses = {"y": "Yes", "n": "No", "a": "All", "never": "Never"}
-
-    while True:
-        response = (
-            input(f"Do you want to delete {file_path}? [Y(es)/N(o)/A(ll)/Never]: ")
-            .strip()
-            .lower()
-        )
-        if not response:
-            response = "y"  # Default to Yes
-        if response in valid_responses:
-            break
-        print("Invalid option. Please choose Y(es), N(o), A(ll), or Never.")
-
-    return response
+def _load_rules(rules_file: str) -> Optional[Rules]:
+    """Load and return rules from a YAML file."""
+    try:
+        with open(rules_file, "r") as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        logger.error(f"❌ Error loading YAML: {e}")
+    except Exception as e:
+        logger.error(f"❌ Unexpected error reading rules file: {e}")
+    return None
 
 
-def check_if_should_delete(rule, rule_responses, file_path):
-    """
-    Check if the file should be deleted.
-    """
-    rule_id = id(rule)
-    if rule_id in rule_responses:
-        user_response = rule_responses[rule_id]
-    else:
-        user_response = prompt_user_for_action(file_path)
+def _collect_files(target_dir: Path, include_hidden: bool) -> List[Path]:
+    """Collect files and directories to process"""
+    return [
+        f for f in target_dir.iterdir()
+        if (include_hidden or not f.name.startswith("."))
+    ]
 
-    if user_response == "n":
+
+def _should_exclude_rules_file(file_path: Path, rules_file: Path, target_dir: Path) -> bool:
+    """Check if a file should be excluded from processing."""
+    return target_dir == rules_file.parent and file_path == rules_file
+
+
+def _handle_deletion(
+    file_path: Path,
+    rule: Rule,
+    rule_responses: RuleResponses,
+    always_delete: bool,
+    never_delete: bool
+) -> bool:
+    """Determine if a file should be deleted based on user preferences and history."""
+    if never_delete:
+        logger.info(f"Skipping deletion of {file_path}")
         return False
-    elif user_response == "never":
+    if always_delete:
+        return True
+
+    rule_id = id(rule)
+    response = rule_responses.get(rule_id, prompt_user_for_action(file_path))
+    
+    if response == "a":
+        rule_responses[rule_id] = "y"
+        return True
+    if response == "never":
         rule_responses[rule_id] = "n"
         return False
-    elif user_response == "a":
-        rule_responses[rule_id] = "y"  # Automatically delete all
-        return True
-    elif user_response == "y":
-        return True
+        
+    return response == "y"
 
 
-# CLI with Click
+def _process_file(
+    file_path: Path,
+    target_dir: Path,
+    matcher: FileMatcher,
+    dry_run: bool,
+    rule_responses: RuleResponses,
+    always_delete: bool,
+    never_delete: bool
+) -> None:
+    """Process an individual file according to matched rules."""
+    file = File.from_path(file_path)
+    if not (rule := matcher.match(file)):
+        return
+
+    action = rule.get("action", {})
+    action_type = action.get("type")
+    target_info = f" | Target: {action.get('target')}" if action_type == "move" else ""
+    
+    logger.info(f"Matched file: {file_path} | Action: {action_type}{target_info}")
+    if dry_run:
+        return
+
+    if action_type == "delete":
+        if not _handle_deletion(file_path, rule, rule_responses, always_delete, never_delete):
+            return
+
+    ActionExecutor(action).execute_action(file_path, target_dir)
+
+
+def _validate_rules(rules_file: str) -> bool:
+    """Validate rules file and return success status."""
+    if not (rules := _load_rules(rules_file)):
+        return False
+    
+    if errors := validate_rules_file(rules):
+        logger.error("❌ Validation failed with %d errors:", len(errors))
+        for error in errors:
+            logger.error("• %s", error)
+        return False
+    return True
+
+
+def prompt_user_for_action(file_path: Path) -> str:
+    """Prompt user for deletion confirmation and return normalized response."""
+    valid_responses = {"y", "n", "a", "never"}
+    prompt = f"Do you want to delete {file_path}? [Y(es)/N(o)/A(ll)/Never]: "
+
+    while True:
+        response = input(prompt).strip().lower() or "y"
+        if response in valid_responses:
+            return response
+        print("Invalid option. Please choose Y(es), N(o), A(ll), or Never.")
+
+
 @click.group(cls=SuperchargedClickGroup)
 def cli():
-    "Organize your directories with ease."
+    """Organize your directories with ease."""
     pass
 
 
 @cli.command(default_command=True)
-@click.argument("target_dir", type=click.Path(exists=True, file_okay=False))
-@click.argument(
-    "rules_file", type=click.Path(exists=True, dir_okay=False), required=False
-)
-@click.option(
-    "--dry-run",
-    "-n",
-    is_flag=True,
-    default=False,
-    help="Simulate the actions without making changes.",
-)
-@click.option(
-    "--quiet",
-    "-q",
-    is_flag=True,
-    default=False,
-    help="Suppress non-error messages.",
-)
-@click.option(
-    "--always-delete",
-    is_flag=True,
-    default=False,
-    help="Always delete matched files without asking.",
-)
-@click.option(
-    "--never-delete",
-    is_flag=True,
-    default=False,
-    help="Never delete matched files.",
-)
-@click.option(
-    "--include-hidden",
-    is_flag=True,
-    default=False,
-    help="Include hidden files (files starting with dot).",
-)
+@click.argument("target_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.argument("rules_file", type=click.Path(exists=True, dir_okay=False), required=False)
+@click.option("--dry-run", "-n", is_flag=True, help="Simulate actions without changes")
+@click.option("--quiet", "-q", is_flag=True, help="Suppress non-error messages")
+@click.option("--always-delete", is_flag=True, help="Delete without confirmation")
+@click.option("--never-delete", is_flag=True, help="Never delete files")
+@click.option("--include-hidden", is_flag=True, help="Process hidden files")
 def organize(
-    target_dir, rules_file, dry_run, quiet, always_delete, never_delete, include_hidden
-):
-    "Organize files in directory based on the file rules. (Default)"
+    target_dir: Path,
+    rules_file: Optional[str],
+    dry_run: bool,
+    quiet: bool,
+    always_delete: bool,
+    never_delete: bool,
+    include_hidden: bool
+) -> None:
+    """Organize files based on rules."""
+    logging.basicConfig(level=logging.ERROR if quiet else logging.INFO)
 
-    # Configure logging
-    log_level = logging.ERROR if quiet else logging.INFO
-    logging.basicConfig(level=log_level)
-
-    # Validate that --always-delete and --never-delete are not both set
     if always_delete and never_delete:
-        logger.error(
-            "❌ Options --always-delete and --never-delete are mutually exclusive."
-        )
-        return
+        logger.error("❌ --always-delete and --never-delete are mutually exclusive")
+        click.exit(code=1)
 
-    if not rules_file:
-        default_rules = Path(target_dir) / ".unclutter_rules.yaml"
-        if default_rules.exists():
-            rules_file = str(default_rules)
-        else:
-            logger.error(
-                "❌ No rules file specified and no .unclutter_rules.yaml found in target directory"
-            )
-            return
+    # Resolve default rules file if not specified
+    if not rules_file and (default_rules := target_dir / ".unclutter_rules.yaml").exists():
+        rules_file = str(default_rules)
+    
+    if not rules_file or not (rules := _load_rules(rules_file)):
+        logger.error("❌ No valid rules file specified")
+        click.exit(code=1)
 
-    rules = _load_rules(rules_file)
-
-    # Check if rules file is valid
     if validate_rules_file(rules):
-        logger.error("❌ Invalid rules file")
-        return
+        click.exit(code=1) # Validation errors already logged
 
     matcher = FileMatcher(rules)
+    rule_responses: RuleResponses = {}
+    rules_file_path = Path(rules_file)
 
-    rule_responses = {}
+    try:
+        files = _collect_files(target_dir, include_hidden)
+        files = [f for f in files if not _should_exclude_rules_file(f, rules_file_path, target_dir)]
 
-    # Traverse directory, optionally including hidden files
-    files = [
-        f.name
-        for f in Path(target_dir).iterdir()
-        if f.is_file() and (include_hidden or not f.name.startswith("."))
-    ]
-
-    # Ignore rules file
-    if Path(target_dir) == Path(rules_file).parent:
-        rules_file_path = Path(rules_file)
-        files = [f for f in files if f != rules_file_path.name]
-
-    for file_name in files:
-        file_path = Path(target_dir) / file_name
-        file = File.from_path(file_path)
-        rule = matcher.match(file)
-
-        if not rule:
-            continue
-
-        action = rule.get("action", {})
-        action_type = action.get("type")
-        target_info = (
-            f" | Target: {action.get('target')}" if action_type == "move" else ""
-        )
-        logger.info(f"Matched file: {file_path} | Action: {action_type}{target_info}")
-        if dry_run:
-            continue
-
-        if action_type == "delete":
-            if never_delete:
-                logger.info(f"Skipping deletion of {file_path}")
-                continue
-            if not always_delete and not check_if_should_delete(
-                rule, rule_responses, file_path
-            ):
-                logger.info(f"Skipping deletion of {file_path}")
-                continue
-
-        executor = ActionExecutor(action)
-        executor.execute_action(file_path, target_dir)
+        for file_path in files:
+            _process_file(
+                file_path,
+                target_dir,
+                matcher,
+                dry_run,
+                rule_responses,
+                always_delete,
+                never_delete
+            )
+    except KeyboardInterrupt:
+        logger.info("\nOperation cancelled by user")
 
 
 @cli.command(aliases=["check"])
 @click.argument("rules_file", type=click.Path(exists=True, dir_okay=False))
-def validate(rules_file):
-    "Validate the structure and attributes of a RULES_FILE."
-
-    rules = _load_rules(rules_file)
-
-    validate_rules_file(rules)
-    logger.info("Validation complete.")
+def validate(rules_file: str) -> None:
+    """Validate a rules file."""
+    if _validate_rules(rules_file):
+        logger.info("✅ Rules file is valid")
 
 
 if __name__ == "__main__":

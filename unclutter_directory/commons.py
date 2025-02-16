@@ -6,7 +6,7 @@ from typing import List, Dict
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[logging.StreamHandler(sys.stdout)])
-logger = logging.getLogger("download_organizer")
+logger = logging.getLogger("unclutter_directory")
 
 def get_logger():
     return logger
@@ -138,6 +138,11 @@ def validate_rules_file(rules: List) -> List[str]:
         if check_archive is not None and not isinstance(check_archive, bool):
             errors.append(f"Rule #{rule_num}: 'check_archive' must be boolean")
             
+        # Validate is_directory
+        is_directory = rule.get("is_directory")
+        if is_directory is not None and not isinstance(is_directory, bool):
+            errors.append(f"Rule #{rule_num}: 'is_directory' must be boolean")
+
     if errors:
         logger.error("Validation failed with %d errors:", len(errors))
         for error in errors:
