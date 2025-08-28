@@ -1,6 +1,7 @@
 import unittest
 
-from unclutter_directory.commons import parse_size, parse_time, validate_rules_file
+from unclutter_directory.commons.parsers import parse_size, parse_time
+from unclutter_directory.commons.validations import validate_rules_file
 
 class TestCommons(unittest.TestCase):
     def test_parse_size(self):
@@ -125,12 +126,12 @@ class TestCommons(unittest.TestCase):
         ]
 
         for i, action in enumerate(valid_actions):
-            rule = {"conditions": {}, "action": action}
+            rule = {"conditions": {"larger": "10MB"}, "action": action}
             errors = validate_rules_file([rule])
             self.assertEqual(errors, [], f"Action #{i + 1} should be valid")
 
         for i, action in enumerate(invalid_actions):
-            rule = {"conditions": {}, "action": action}
+            rule = {"conditions": {"larger": "10MB"}, "action": action}
             errors = validate_rules_file([rule])
             self.assertTrue(len(errors) > 0, f"Action #{i + 1} should be invalid")
             if action.get("type") == "move":
@@ -138,13 +139,13 @@ class TestCommons(unittest.TestCase):
 
     def test_is_valid_rule_check_archive(self):
         valid_rules = [
-            {"conditions": {}, "action": {"type": "delete"}, "check_archive": False},
-            {"conditions": {}, "action": {"type": "delete"}, "check_archive": True}
+            {"conditions": {"larger": "10MB"}, "action": {"type": "delete"}, "check_archive": False},
+            {"conditions": {"larger": "10MB"}, "action": {"type": "delete"}, "check_archive": True}
         ]
 
         invalid_rules = [
             # Non-boolean check_archive value
-            {"conditions": {}, "action": {"type": "delete"}, "check_archive": 42}
+            {"conditions": {"larger": "10MB"}, "action": {"type": "delete"}, "check_archive": 42}
         ]
 
         for i, rule in enumerate(valid_rules):

@@ -1,16 +1,43 @@
 from typing import List, Dict
 
-from .File import File, CompressedArchive, RarArchive, ZipArchive
+from ..entities.file import File, CompressedArchive, RarArchive, ZipArchive
 
-from .commons import parse_size, parse_time
+from ..commons.validations import parse_size, parse_time
 
 
-# Define core functions for library
+"""
+FileMatcher provides functionality to match files against a set of predefined rules.
+
+The class supports various matching conditions including filename patterns, size constraints,
+age constraints, and archive content inspection for compressed files.
+"""
+
 class FileMatcher:
     def __init__(self, rules: List[Dict]):
+        """
+        Initialize FileMatcher with a list of matching rules.
+
+        Args:
+            rules (List[Dict]): A list of dictionaries, where each dictionary
+                represents a rule with keys like 'conditions', 'case_sensitive',
+                'is_directory', and 'check_archive'.
+        """
         self.rules = rules
 
     def match(self, file: File) -> Dict:
+        """
+        Match a file against the configured rules.
+
+        Checks the file against each rule in order. Rules can include conditions
+        for filename patterns (start, end, contain, regex), size (larger, smaller),
+        age (older, newer), and archive content inspection.
+
+        Args:
+            file (File): The file object to match against the rules.
+
+        Returns:
+            Dict: The first matching rule dictionary, or None if no rules match.
+        """
         archive_manager = self._get_archive_manager(file)
 
         for rule in self.rules:
@@ -35,6 +62,19 @@ class FileMatcher:
         return None
 
     def _get_archive_manager(self, file: File) -> CompressedArchive:
+        """
+        Get the appropriate archive manager for compressed files.
+
+        Returns a manager instance based on the file extension. Currently
+        supports ZIP and RAR archive formats.
+
+        Args:
+            file (File): The file to get an archive manager for.
+
+        Returns:
+            CompressedArchive or None: An archive manager instance if the file
+                is a supported compressed format, None otherwise.
+        """
         if file.name.endswith(".zip"):
             return ZipArchive()
         elif file.name.endswith(".rar"):
@@ -44,6 +84,20 @@ class FileMatcher:
     def _file_matches_conditions(
         self, file: File, conditions: Dict, case_sensitive: bool
     ) -> bool:
+        """
+        Check if a file matches the specified conditions.
+
+        Supports multiple condition types: filename prefix/suffix matching,
+        substring containment, regex matching, size comparisons, and age comparisons.
+
+        Args:
+            file (File): The file object to check.
+            conditions (Dict): Dictionary of conditions to match against.
+            case_sensitive (bool): Whether to perform case-sensitive matching.
+
+        Returns:
+            bool: True if all conditions are met, False otherwise.
+        """
         name = file.name
 
         if "start" in conditions:

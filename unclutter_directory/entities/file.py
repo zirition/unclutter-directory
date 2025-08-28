@@ -7,9 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from unclutter_directory import commons
+from unclutter_directory.commons import validations
 
-logger = commons.get_logger()
+logger = validations.get_logger()
 
 
 class File:
@@ -17,10 +17,31 @@ class File:
         self.path = path
         self.name = name
         if isinstance(date, tuple):
-            date = datetime(*date).timestamp()
+            date = self._validate_and_correct_date_tuple(date)
         self.date = date
         self.size = size
         self.is_directory = is_directory
+
+    @staticmethod
+    def _validate_and_correct_date_tuple(date_tuple):
+        year = date_tuple[0]
+        month = date_tuple[1] if len(date_tuple) > 1 else 1
+        day = date_tuple[2] if len(date_tuple) > 2 else 1
+        hour = date_tuple[3] if len(date_tuple) > 3 else 0
+        minute = date_tuple[4] if len(date_tuple) > 4 else 0
+        second = date_tuple[5] if len(date_tuple) > 5 else 0
+
+        year = max(1, min(year, 9999))
+        month = max(1, min(month, 12))
+        day = max(1, min(day, 31))
+        hour = max(0, min(hour, 23))
+        minute = max(0, min(minute, 59))
+        second = max(0, min(second, 59))
+
+        try:
+            return datetime(year, month, day, hour, minute, second).timestamp()
+        except ValueError:
+            return datetime(year, month, 28, hour, minute, second).timestamp()
 
     @staticmethod
     def from_path(file_path: Path):

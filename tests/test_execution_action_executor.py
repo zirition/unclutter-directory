@@ -6,7 +6,7 @@ import zipfile
 from unittest.mock import patch
 from typing import List
 
-from unclutter_directory.ActionExecutor import ActionExecutor
+from unclutter_directory.execution.action_executor import ActionExecutor
 
 class TestActionExecutor(unittest.TestCase):
     def setUp(self):

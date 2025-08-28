@@ -4,9 +4,8 @@ import os
 from pathlib import Path
 from datetime import datetime, timedelta
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
 
-from unclutter_directory.File import File, ZipArchive, RarArchive
+from unclutter_directory.entities.file import File, ZipArchive
 
 
 class TestFileClass(unittest.TestCase):
