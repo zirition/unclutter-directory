@@ -24,7 +24,7 @@ license = {text = "MIT"}
 keywords = ["unclutter", "directory", "organize", "clean", "files", "folders"]
 
 [project.scripts]
-unclutter-directory = "unclutter_directory.cli:clipyth"
+unclutter-directory = "unclutter_directory.cli:cli"
 
 [project.urls]
 Homepage = "https://github.com/zirition/unclutter-directory"
