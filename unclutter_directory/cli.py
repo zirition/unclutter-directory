@@ -6,7 +6,9 @@ import click
 from click_supercharged import SuperchargedClickGroup
 
 from .config.organize_config import OrganizeConfig
+from .config.delete_unpacked_config import DeleteUnpackedConfig
 from .commands.organize_command import OrganizeCommand
+from .commands.delete_unpacked_command import DeleteUnpackedCommand
 from .validation.rules_validator import RulesFileValidator
 from .commons import validations
 
@@ -70,7 +72,7 @@ def organize(
 def validate(rules_file: str) -> None:
     """
     Validate the structure and content of a rules file.
-    
+
     Checks for proper YAML format, valid rule structure, and logical consistency.
     """
     try:
@@ -84,11 +86,11 @@ def validate(rules_file: str) -> None:
             never_delete=False,
             include_hidden=False
         )
-        
+
         # Validate using rules validator
         validator = RulesFileValidator()
         errors = validator.validate(config)
-        
+
         if errors:
             logger.error("Validation failed:")
             for error in errors:
@@ -96,9 +98,69 @@ def validate(rules_file: str) -> None:
             sys.exit(1)
         else:
             logger.info(f"✅ Rules file '{rules_file}' is valid")
-            
+
     except Exception as e:
         logger.error(f"Validation error: {e}")
+        sys.exit(1)
+
+
+@cli.command("delete-unpacked", aliases=["del-unpacked", "clean-archives"])
+@click.argument("target_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--dry-run", "-n", is_flag=True,
+              help="Show what would be deleted without actually deleting")
+@click.option("--always-delete", "-y", is_flag=True,
+              help="Delete duplicate directories without confirmation")
+@click.option("--never-delete", is_flag=True,
+              help="Never delete directories, only show potential duplicates")
+@click.option("--include-hidden", is_flag=True,
+              help="Include hidden files and directories in comparison")
+def delete_unpacked(
+    target_dir: Path,
+    dry_run: bool,
+    always_delete: bool,
+    never_delete: bool,
+    include_hidden: bool
+) -> None:
+    """
+    Remove uncompressed directories that match compressed files.
+
+    Scans TARGET_DIR for compressed files (ZIP, RAR) and looks for
+    directories with the same name (without extension). If they exist
+    and have identical file structures, prompts to remove the uncompressed directory.
+
+    By default, this command runs in dry-run mode (--dry-run).
+    """
+    try:
+        # Validate conflicting options
+        if always_delete and never_delete:
+            logger.error("--always-delete and --never-delete are mutually exclusive")
+            sys.exit(1)
+
+        # If no flags specified, default to dry-run
+        if not any([dry_run, always_delete, never_delete]):
+            dry_run = True
+            logger.info("No deletion flag specified, running in dry-run mode")
+
+        # Create configuration
+        config = DeleteUnpackedConfig(
+            target_dir=target_dir,
+            dry_run=dry_run,
+            always_delete=always_delete,
+            never_delete=never_delete,
+            include_hidden=include_hidden
+        )
+
+        # Execute check duplicates command
+        command = DeleteUnpackedCommand(config)
+        command.execute()
+
+    except ValueError as e:
+        logger.error(f"Configuration error: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        logger.info("\nOperation cancelled by user")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
         sys.exit(1)
 
 

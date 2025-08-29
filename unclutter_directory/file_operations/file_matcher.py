@@ -1,6 +1,7 @@
 from typing import List, Dict
 
-from ..entities.file import File, CompressedArchive, RarArchive, ZipArchive
+from ..entities.file import File
+from ..entities.compressed_archive import CompressedArchive, get_archive_manager
 
 from ..commons.validations import parse_size, parse_time
 
@@ -65,21 +66,17 @@ class FileMatcher:
         """
         Get the appropriate archive manager for compressed files.
 
-        Returns a manager instance based on the file extension. Currently
-        supports ZIP and RAR archive formats.
+        Uses Chain of Responsibility pattern to determine the correct archive manager
+        based on the file extension. Currently supports ZIP and RAR archive formats.
 
         Args:
             file (File): The file to get an archive manager for.
 
         Returns:
             CompressedArchive or None: An archive manager instance if the file
-                is a supported compressed format, None otherwise.
+            is a supported compressed format, None otherwise.
         """
-        if file.name.endswith(".zip"):
-            return ZipArchive()
-        elif file.name.endswith(".rar"):
-            return RarArchive()
-        return None
+        return get_archive_manager(file)
 
     def _file_matches_conditions(
         self, file: File, conditions: Dict, case_sensitive: bool

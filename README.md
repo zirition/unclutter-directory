@@ -16,6 +16,11 @@ A smart file organization tool that automatically sorts your files and directori
   - 📦 Compress files/directories to ZIP archives
   - 🔍 Search inside ZIP/RAR archives for matching files
 
+- **Duplicate Detection**
+  - 🔍 *New:* Remove uncompressed directories that match compressed files
+  - 🗂️ Compare file structures between archives and directories
+  - 🗑️ Interactive removal of uncompressed directories with safety prompts
+
 - **Advanced Matching**
   - Name patterns (starts/ends with, contains, regex)
   - File size thresholds (larger/smaller than)
@@ -41,6 +46,7 @@ A smart file organization tool that automatically sorts your files and directori
 ```bash
 unclutter organize [OPTIONS] TARGET_DIR [RULES_FILE]
 unclutter validate [OPTIONS] RULES_FILE
+unclutter delete-unpacked [OPTIONS] TARGET_DIR
 ```
 
 ### Common Options
@@ -52,6 +58,15 @@ unclutter validate [OPTIONS] RULES_FILE
 | --include-hidden | Process hidden files/directories        |
 | --always-delete  | Skip confirmation for deletions         |
 | --never-delete   | Prevent all deletion actions            |
+
+**Delete-Unpacked Specific Options:**
+
+| Option           | Description                                   |
+|------------------|-----------------------------------------------|
+| --dry-run        | Show what would be removed (default behavior) |
+| --always-delete  | Remove uncompressed directories without confirmation |
+| --never-delete   | Only report matches, don't remove anything    |
+| --include-hidden | Include hidden files in structure comparison  |
 
 ### Example Workflow
 
@@ -89,6 +104,31 @@ Apply changes:
 ```bash
 unclutter organize ~/Downloads cleanup_rules.yaml
 ```
+
+### Delete Unpacked Command
+
+Remove uncompressed directories that have the same structure as compressed files:
+
+```bash
+# Find uncompressed directories in dry-run mode (default)
+unclutter delete-unpacked ~/Downloads
+
+# Always remove uncompressed directories without confirmation
+unclutter delete-unpacked ~/Downloads --always-delete
+
+# Never delete, only show what would be removed
+unclutter delete-unpacked ~/Downloads --never-delete
+
+# Include hidden files in comparison
+unclutter delete-unpacked ~/Downloads --include-hidden
+```
+
+**How it works:**
+- Scans for ZIP/RAR files in the target directory
+- Looks for directories with the same name (without extension)
+- Compares file structures between archive and directory
+- Prompts for deletion if structures are identical
+- Safely handles large directories and archives
 ## Rules Configuration ⚙️
 
 ### Rule Structure

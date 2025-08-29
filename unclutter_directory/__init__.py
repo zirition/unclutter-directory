@@ -18,7 +18,12 @@ Basic usage:
 __version__ = "0.9.4"
 
 from .cli import cli
-from .entities.file import File, CompressedArchive, ZipArchive, RarArchive
+from .entities.file import File
+from .entities.compressed_archive import (
+    CompressedArchive, ZipArchive, RarArchive,
+    ArchiveHandler, ZipHandler, RarHandler, ArchiveHandlerChain,
+    get_archive_manager
+)
 from .file_operations.file_matcher import FileMatcher
 from .execution.action_executor import ActionExecutor
 from .execution.action_strategies import MoveStrategy, DeleteStrategy, CompressStrategy
@@ -47,6 +52,11 @@ __all__ = [
     "CompressedArchive",
     "ZipArchive",
     "RarArchive",
+    "ArchiveHandler",
+    "ZipHandler",
+    "RarHandler",
+    "ArchiveHandlerChain",
+    "get_archive_manager",
 
     # Version
     "__version__",

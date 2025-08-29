@@ -5,7 +5,8 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from tempfile import TemporaryDirectory
 
-from unclutter_directory.entities.file import File, ZipArchive
+from unclutter_directory.entities.file import File
+from unclutter_directory.entities.compressed_archive import ZipArchive
 
 
 class TestFileClass(unittest.TestCase):
