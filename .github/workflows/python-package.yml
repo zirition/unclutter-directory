@@ -24,6 +24,7 @@ jobs:
       uses: astral-sh/setup-uv@v5
       with:
         python-version: "3.11"
+        cache-dependency-glob: "**/pyproject.toml"
 
     - name: Install the project with dev dependencies
       run: uv sync --extra dev --dev
@@ -52,6 +53,7 @@ jobs:
       uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ matrix.python-version }}
+        cache-dependency-glob: "**/pyproject.toml"
 
     - name: Install the project with dev dependencies
       run: uv sync --all-extras --dev

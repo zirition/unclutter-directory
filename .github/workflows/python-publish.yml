@@ -31,6 +31,8 @@ jobs:
 
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v5
+        with:
+          cache-dependency-glob: "**/pyproject.toml"
 
       - name: Install the project with dev dependencies
         run: uv sync --dev
