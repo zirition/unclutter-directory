@@ -1,0 +1,63 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name (e.g., 1.0.0)'
+        required: true
+        type: string
+      release_title:
+        description: 'Release title'
+        required: true
+        type: string
+      release_body:
+        description: 'Release description (body)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Create tag and release
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+        # Create tag
+        git tag ${{ inputs.tag_name }}
+
+        # Push tag
+        git push origin ${{ inputs.tag_name }}
+
+        # Create release
+        gh release create ${{ inputs.tag_name }} \
+          --title "${{ inputs.release_title }}" \
+          --notes "${{ inputs.release_body }}" \
+          ${{ inputs.prerelease && '--prerelease' || '' }} \
+          --latest=false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trigger-publish:
+    runs-on: ubuntu-latest
+    needs: create-release
+    steps:
+    - name: Wait for package build
+      run: echo "Package will be published by python-publish workflow on tag push"

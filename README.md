@@ -377,7 +377,6 @@ Search inside compressed files:
     type: compress
     target: "project_archives/"
 ```
-
 ## Development 👩💻
 
 ### Project Setup
@@ -391,6 +390,7 @@ source .venv/bin/activate  # Linux/MacOS
 
 pip install -e .[dev]  # Install with development dependencies
 ```
+
 
 ## Testing
 

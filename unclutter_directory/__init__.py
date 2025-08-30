@@ -6,16 +6,21 @@ compression, deletion, and other organizational actions.
 
 Basic usage:
     from unclutter_directory import cli, File, FileMatcher, OrganizeCommand
-    
+
     # Run CLI
     cli()
-    
+
     # Use components programmatically
     file = File.from_path(Path("document.txt"))
     matcher = FileMatcher(rules)
 """
 
-__version__ = "0.9.4"
+try:
+    from importlib.metadata import version
+    __version__ = version("unclutter-directory")
+except ImportError:
+    # Fallback for pre-3.8 and development
+    __version__ = "unknown"
 
 from .cli import cli
 from .entities.file import File
