@@ -11,15 +11,15 @@ The factory pattern allows for:
 - Consistent instance creation
 """
 
-from typing import Dict, Type, Optional, List
+from typing import Dict, List, Optional, Type
 
+from ..commons import validations
 from .action_strategies import (
     ActionStrategy,
-    MoveStrategy,
+    CompressStrategy,
     DeleteStrategy,
-    CompressStrategy
+    MoveStrategy,
 )
-from ..commons import validations
 
 
 class ActionStrategyFactory:
@@ -36,11 +36,13 @@ class ActionStrategyFactory:
     _strategies: Dict[str, Type[ActionStrategy]] = {
         "move": MoveStrategy,
         "delete": DeleteStrategy,
-        "compress": CompressStrategy
+        "compress": CompressStrategy,
     }
 
     @classmethod
-    def create_strategy(cls, action_type: str, logger_instance=None) -> Optional[ActionStrategy]:
+    def create_strategy(
+        cls, action_type: str, logger_instance=None
+    ) -> Optional[ActionStrategy]:
         """Create a strategy instance for the specified action type.
 
         Args:
@@ -95,7 +97,9 @@ class ActionStrategyFactory:
         return action_type in cls._strategies
 
     @classmethod
-    def register_strategy(cls, action_type: str, strategy_class: Type[ActionStrategy]) -> None:
+    def register_strategy(
+        cls, action_type: str, strategy_class: Type[ActionStrategy]
+    ) -> None:
         """Register a new strategy for a specific action type.
 
         This method allows runtime extension of available actions.
@@ -116,7 +120,9 @@ class ActionStrategyFactory:
         if action_type in cls._strategies:
             raise ValueError(f"Action type '{action_type}' is already registered")
 
-        if not isinstance(strategy_class, type) or not issubclass(strategy_class, ActionStrategy):
+        if not isinstance(strategy_class, type) or not issubclass(
+            strategy_class, ActionStrategy
+        ):
             raise ValueError("strategy_class must be a subclass of ActionStrategy")
 
         cls._strategies[action_type] = strategy_class

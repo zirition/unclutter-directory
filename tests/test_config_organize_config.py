@@ -1,8 +1,8 @@
-import unittest
 import tempfile
+import unittest
 from pathlib import Path
 
-from unclutter_directory.config.organize_config import OrganizeConfig, ExecutionMode
+from unclutter_directory.config.organize_config import ExecutionMode, OrganizeConfig
 
 
 class TestOrganizeConfig(unittest.TestCase):
@@ -50,7 +50,10 @@ class TestOrganizeConfig(unittest.TestCase):
                 include_hidden=False,
             )
 
-        self.assertIn("always_delete and never_delete are mutually exclusive", str(context.exception))
+        self.assertIn(
+            "always_delete and never_delete are mutually exclusive",
+            str(context.exception),
+        )
 
     def test_execution_mode_dry_run(self):
         """Test execution_mode property returns DRY_RUN when dry_run is True"""
@@ -198,5 +201,5 @@ class TestOrganizeConfig(unittest.TestCase):
         self.assertEqual(str(config2.target_dir), string_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(failfast=True)

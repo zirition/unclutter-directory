@@ -1,11 +1,12 @@
-import unittest
 import tempfile
+import unittest
 from pathlib import Path
 from unittest.mock import patch
+
 from unclutter_directory.file_operations.file_collector import FileCollector
 
-class TestFileCollector(unittest.TestCase):
 
+class TestFileCollector(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.test_path = Path(self.temp_dir.name)
@@ -52,10 +53,10 @@ class TestFileCollector(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 collector.collect(self.test_path)
 
-    def test_collect_generic_exception(self):
+    def test_collect_os_error(self):
         collector = FileCollector()
-        with patch.object(Path, "iterdir", side_effect=Exception("fail")):
-            with self.assertRaises(Exception):
+        with patch.object(Path, "iterdir", side_effect=OSError("fail")):
+            with self.assertRaises(OSError):
                 collector.collect(self.test_path)
 
     def test_collect_recursive_depth_1(self):
@@ -90,7 +91,6 @@ class TestFileCollector(unittest.TestCase):
         collector = FileCollector()
         collected = collector.collect_recursive(self.test_path, max_depth=0)
         self.assertEqual(collected, [])
-
 
     def test_collect_empty_directory(self):
         collector = FileCollector()
@@ -136,7 +136,7 @@ class TestFileCollector(unittest.TestCase):
         for i in range(3):
             current_dir = current_dir / f"dir{i}"
             self.assertIn(current_dir, collected)
-        for i in range(3,5):
+        for i in range(3, 5):
             current_dir = current_dir / f"dir{i}"
             self.assertNotIn(current_dir, collected)
 
@@ -145,7 +145,7 @@ class TestFileCollector(unittest.TestCase):
         for i in range(2):
             current_dir = current_dir / f"dir{i}"
             self.assertIn(current_dir / f"file{i}.txt", collected)
-        for i in range(2,5):
+        for i in range(2, 5):
             current_dir = current_dir / f"dir{i}"
             self.assertNotIn(current_dir / f"file{i}.txt", collected)
 
@@ -154,7 +154,7 @@ class TestFileCollector(unittest.TestCase):
             "file with spaces.txt",
             "unicodé_файл.txt",
             "special_!@#$%^&*().txt",
-            "1234567890.txt"
+            "1234567890.txt",
         ]
         for name in filenames:
             (self.test_path / name).write_text("content")
@@ -183,6 +183,7 @@ class TestFileCollector(unittest.TestCase):
         nonexistent_path = self.test_path / "does_not_exist"
         with self.assertRaises(FileNotFoundError):
             collector.collect(nonexistent_path)
+
 
 if __name__ == "__main__":
     unittest.main(failfast=True)

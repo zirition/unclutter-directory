@@ -1,12 +1,12 @@
+import os
 import unittest
 import zipfile
-import os
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from unclutter_directory.entities.file import File
 from unclutter_directory.entities.compressed_archive import ZipArchive
+from unclutter_directory.entities.file import File
 
 
 class TestFileClass(unittest.TestCase):

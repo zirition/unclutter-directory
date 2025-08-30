@@ -2,12 +2,12 @@
 Directory analysis utility for comparing directory structures with compressed archives.
 """
 
+import os
 from pathlib import Path
 from typing import Dict, List
-import os
 
-from ..entities.file import File
 from ..commons import validations
+from ..entities.file import File
 
 logger = validations.get_logger()
 
@@ -48,12 +48,12 @@ class DirectoryAnalyzer:
 
                 # Filter hidden directories if not included
                 if not self.include_hidden:
-                    dirs[:] = [d for d in dirs if not d.startswith('.')]
+                    dirs[:] = [d for d in dirs if not d.startswith(".")]
 
                 # Process each file
                 for file_name in files:
                     # Skip hidden files if not included
-                    if not self.include_hidden and file_name.startswith('.'):
+                    if not self.include_hidden and file_name.startswith("."):
                         continue
 
                     file_path = root_path / file_name
@@ -70,18 +70,18 @@ class DirectoryAnalyzer:
                             path=root_path,  # Parent directory
                             name=str(relative_path),  # Relative path as filename
                             date=int(stat.st_mtime),  # Modification time
-                            size=stat.st_size  # File size
+                            size=stat.st_size,  # File size
                         )
 
                         all_files.append(file_obj)
 
-                    except (OSError, IOError) as e:
+                    except OSError as e:
                         logger.warning(f"Could not access file {file_path}: {e}")
                         continue
 
             return all_files
 
-        except (OSError, IOError) as e:
+        except OSError as e:
             logger.error(f"Error analyzing directory {directory_path}: {e}")
             return []
 
@@ -113,9 +113,9 @@ class DirectoryAnalyzer:
 
         for file in files:
             details[file.name] = {
-                'size': file.size,
-                'date': file.date,
-                'path': str(file.path / file.name)
+                "size": file.size,
+                "date": file.date,
+                "path": str(file.path / file.name),
             }
 
         return details

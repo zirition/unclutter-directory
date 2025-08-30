@@ -11,35 +11,38 @@ logger = validations.get_logger()
 # Type aliases
 RuleResponses = Dict[int, str]
 
+
 class ExecutionStrategy(ABC):
     """Abstract strategy for file processing execution"""
-    
+
     @abstractmethod
     def should_execute_action(
-        self, 
-        file_path: Path, 
-        action_type: str, 
+        self,
+        file_path: Path,
+        action_type: str,
         rule: Rule,
-        rule_responses: RuleResponses
+        rule_responses: RuleResponses,
     ) -> bool:
         """
         Determine if action should be executed
-        
+
         Args:
             file_path: Path to the file being processed
             action_type: Type of action (move, delete, compress)
             rule: The matched rule
             rule_responses: Dictionary storing user responses for rules
-            
+
         Returns:
             True if action should be executed, False otherwise
         """
         pass
-    
-    def log_match(self, file_path: Path, action_type: str, target: Optional[str] = None):
+
+    def log_match(
+        self, file_path: Path, action_type: str, target: Optional[str] = None
+    ):
         """
         Log matched file information
-        
+
         Args:
             file_path: Path to matched file
             action_type: Type of action to perform
@@ -51,43 +54,47 @@ class ExecutionStrategy(ABC):
 
 class DryRunStrategy(ExecutionStrategy):
     """Strategy for dry run mode - logs actions but doesn't execute them"""
-    
+
     def should_execute_action(
-        self, 
-        file_path: Path, 
-        action_type: str, 
+        self,
+        file_path: Path,
+        action_type: str,
         rule: Rule,
-        rule_responses: RuleResponses
+        rule_responses: RuleResponses,
     ) -> bool:
         """Always returns False for dry run mode"""
         return False
-    
-    def log_match(self, file_path: Path, action_type: str, target: Optional[str] = None):
+
+    def log_match(
+        self, file_path: Path, action_type: str, target: Optional[str] = None
+    ):
         """Override to add dry run indication"""
         target_info = f" | Target: {target}" if target else ""
-        logger.info(f"[DRY RUN] Would execute: {file_path} | Action: {action_type}{target_info}")
+        logger.info(
+            f"[DRY RUN] Would execute: {file_path} | Action: {action_type}{target_info}"
+        )
 
 
 class AutomaticStrategy(ExecutionStrategy):
     """Strategy for automatic execution without user interaction"""
-    
+
     def __init__(self, always_delete: bool, never_delete: bool):
         """
         Initialize automatic strategy
-        
+
         Args:
             always_delete: If True, always delete without prompting
             never_delete: If True, never delete files
         """
         self.always_delete = always_delete
         self.never_delete = never_delete
-    
+
     def should_execute_action(
-        self, 
-        file_path: Path, 
-        action_type: str, 
+        self,
+        file_path: Path,
+        action_type: str,
         rule: Rule,
-        rule_responses: RuleResponses
+        rule_responses: RuleResponses,
     ) -> bool:
         """Determine execution based on configured flags"""
         if action_type == "delete":
@@ -98,27 +105,29 @@ class AutomaticStrategy(ExecutionStrategy):
                 return True
             else:
                 # This shouldn't happen with proper configuration validation
-                logger.warning(f"Automatic strategy without delete preference for {file_path}")
+                logger.warning(
+                    f"Automatic strategy without delete preference for {file_path}"
+                )
                 return False
-        
+
         # For non-delete actions, always execute
         return True
 
 
 class InteractiveStrategy(ExecutionStrategy):
     """Strategy for interactive execution with user prompts for deletion"""
-    
+
     def should_execute_action(
-        self, 
-        file_path: Path, 
-        action_type: str, 
+        self,
+        file_path: Path,
+        action_type: str,
         rule: Rule,
-        rule_responses: RuleResponses
+        rule_responses: RuleResponses,
     ) -> bool:
         """Handle user interaction for delete actions"""
         if action_type != "delete":
             return True
-        
+
         rule_id = id(rule)
 
         # Check if we already have a response for this rule
@@ -143,14 +152,14 @@ class InteractiveStrategy(ExecutionStrategy):
         else:
             # Don't cache individual Y/N responses - ask each time
             return response == "y"
-    
+
     def _prompt_user_for_action(self, file_path: Path) -> str:
         """
         Prompt user for deletion confirmation
-        
+
         Args:
             file_path: Path to file that would be deleted
-            
+
         Returns:
             User's response (normalized to lowercase)
         """
@@ -166,4 +175,4 @@ class InteractiveStrategy(ExecutionStrategy):
             except (EOFError, KeyboardInterrupt):
                 # Handle Ctrl+C or EOF gracefully
                 print("\nOperation cancelled by user.")
-                raise KeyboardInterrupt
+                raise KeyboardInterrupt from None

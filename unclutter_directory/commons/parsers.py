@@ -1,8 +1,8 @@
 import re
 
-
 SIZE_UNITS = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3}
 TIME_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
+
 
 def parse_size(size_str: str) -> int:
     """
@@ -43,14 +43,14 @@ def parse_size(size_str: str) -> int:
         if unit:
             unit = unit.upper()
             # Handle cases like "KB", "K", "B"
-            if unit.endswith('B'):
-                unit = unit[:-1] + 'B'  # "KB" -> "KB", "MB" -> "MB"
+            if unit.endswith("B"):
+                unit = unit[:-1] + "B"  # "KB" -> "KB", "MB" -> "MB"
             elif len(unit) == 1:  # Handle "K", "M", "G"
-                unit += 'B'
+                unit += "B"
             else:
-                unit = 'B'
+                unit = "B"
         else:
-            unit = 'B'
+            unit = "B"
 
         if unit not in SIZE_UNITS:
             raise ValueError(f"Unsupported size unit: '{unit}'")
@@ -59,6 +59,7 @@ def parse_size(size_str: str) -> int:
 
     except (ValueError, TypeError) as e:
         raise ValueError(f"Failed to parse size '{size_str}': {str(e)}") from e
+
 
 def parse_time(time_str: str) -> int:
     """
@@ -105,4 +106,3 @@ def parse_time(time_str: str) -> int:
 
     except (ValueError, TypeError) as e:
         raise ValueError(f"Failed to parse time '{time_str}': {str(e)}") from e
-

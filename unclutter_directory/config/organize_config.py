@@ -6,6 +6,7 @@ from typing import Optional
 
 class ExecutionMode(Enum):
     """Execution mode for organize operation"""
+
     DRY_RUN = "dry_run"
     INTERACTIVE = "interactive"
     AUTOMATIC = "automatic"
@@ -14,6 +15,7 @@ class ExecutionMode(Enum):
 @dataclass
 class OrganizeConfig:
     """Configuration object for organize operation"""
+
     target_dir: Path
     rules_file: Optional[str]
     dry_run: bool
@@ -21,12 +23,12 @@ class OrganizeConfig:
     always_delete: bool
     never_delete: bool
     include_hidden: bool
-    
+
     def __post_init__(self):
         """Validate configuration after initialization"""
         if self.always_delete and self.never_delete:
             raise ValueError("always_delete and never_delete are mutually exclusive")
-    
+
     @property
     def execution_mode(self) -> ExecutionMode:
         """Determine execution mode based on configuration"""
@@ -36,7 +38,7 @@ class OrganizeConfig:
             return ExecutionMode.AUTOMATIC
         else:
             return ExecutionMode.INTERACTIVE
-    
+
     @property
     def rules_file_path(self) -> Optional[Path]:
         """Get rules file as Path object"""

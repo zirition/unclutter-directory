@@ -1,8 +1,13 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from unclutter_directory.execution.action_strategies import (
+    ActionStrategy,
+    CompressStrategy,
+    DeleteStrategy,
+    MoveStrategy,
+)
 from unclutter_directory.execution.action_strategy_factory import ActionStrategyFactory
-from unclutter_directory.execution.action_strategies import MoveStrategy, DeleteStrategy, CompressStrategy, ActionStrategy
 
 
 class TestActionStrategyFactory(unittest.TestCase):
@@ -63,10 +68,12 @@ class TestActionStrategyFactory(unittest.TestCase):
 
     def test_register_strategy_success(self):
         """Test registering a new strategy successfully"""
+
         # Create a valid strategy class
         class MockStrategy(ActionStrategy):
             def execute(self, file_path, parent_path, target):
                 pass
+
             def validate(self, file_path, target):
                 return True
 
@@ -87,10 +94,12 @@ class TestActionStrategyFactory(unittest.TestCase):
 
     def test_unregister_strategy_existing(self):
         """Test unregistering an existing strategy"""
+
         # Create a valid strategy class
         class MockStrategy(ActionStrategy):
             def execute(self, file_path, parent_path, target):
                 pass
+
             def validate(self, file_path, target):
                 return True
 
@@ -133,7 +142,7 @@ class TestActionStrategyFactory(unittest.TestCase):
         self.assertEqual(info["delete"], "DeleteStrategy")
         self.assertEqual(info["compress"], "CompressStrategy")
 
-    @patch('unclutter_directory.execution.action_strategies.logger')
+    @patch("unclutter_directory.execution.action_strategies.logger")
     def test_create_strategy_without_logger(self, mock_logger):
         """Test creating strategy without providing logger (uses class attribute)"""
         strategy = self.factory.create_strategy("move")
@@ -158,6 +167,7 @@ class TestActionStrategyFactoryEdgeCases(unittest.TestCase):
 
     def test_register_strategy_invalid_callable(self):
         """Test registering something that's callable but not a class"""
+
         def not_a_class():
             pass
 

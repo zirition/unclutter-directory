@@ -29,11 +29,13 @@ logger = validations.get_logger()
 
 class ActionExecutionError(Exception):
     """Exception raised when an action fails but recovery is possible"""
+
     pass
 
 
 class ActionExecutionFatalError(Exception):
     """Exception raised when an action fails critically and execution should stop"""
+
     pass
 
 
@@ -241,7 +243,7 @@ class CompressStrategy(ActionStrategy):
     """
 
     # Extensions that are already compressed and should be skipped
-    COMPRESSED_EXTENSIONS = {'.zip', '.rar', '.7z', '.tar', '.gz', '.bz2'}
+    COMPRESSED_EXTENSIONS = {".zip", ".rar", ".7z", ".tar", ".gz", ".bz2"}
 
     def validate(self, file_path: Path, target: str) -> bool:
         """Validate compression operation parameters.
@@ -262,8 +264,10 @@ class CompressStrategy(ActionStrategy):
             return False
 
         # Skip if file is already compressed
-        if (file_path.is_file() and
-            file_path.suffix.lower() in self.COMPRESSED_EXTENSIONS):
+        if (
+            file_path.is_file()
+            and file_path.suffix.lower() in self.COMPRESSED_EXTENSIONS
+        ):
             # Return True to allow execution, but CompressStrategy will skip it
             return True
 
@@ -291,8 +295,10 @@ class CompressStrategy(ActionStrategy):
             ActionExecutionError: When compression fails
         """
         # Skip compression for already compressed files
-        if (file_path.is_file() and
-            file_path.suffix.lower() in self.COMPRESSED_EXTENSIONS):
+        if (
+            file_path.is_file()
+            and file_path.suffix.lower() in self.COMPRESSED_EXTENSIONS
+        ):
             self._logger.info(f"Skipping compression for archive file: {file_path}")
             return
 
@@ -301,8 +307,9 @@ class CompressStrategy(ActionStrategy):
             target_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate ZIP filename
-            zip_name = (file_path.stem if file_path.is_file()
-                       else file_path.name) + ".zip"
+            zip_name = (
+                file_path.stem if file_path.is_file() else file_path.name
+            ) + ".zip"
             target_path = target_dir / zip_name
 
             # Resolve filename conflicts
@@ -352,7 +359,7 @@ class CompressStrategy(ActionStrategy):
                 # Add directory entry only if it's empty (to preserve structure)
                 if not list(file_path.iterdir()):
                     arcname = file_path.relative_to(source_path.parent)
-                    zipf.writestr(str(arcname) + '/', '')
+                    zipf.writestr(str(arcname) + "/", "")
 
     def _get_target_directory(self, target: str, parent_path: Path) -> Path:
         """Resolve target directory path for compression.

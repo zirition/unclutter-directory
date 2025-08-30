@@ -3,22 +3,23 @@ import unittest
 from unclutter_directory.commons.parsers import parse_size, parse_time
 from unclutter_directory.commons.validations import validate_rules_file
 
+
 class TestCommons(unittest.TestCase):
     def test_parse_size(self):
         # Test different size units
         self.assertEqual(parse_size("1KB"), 1024)
         self.assertEqual(parse_size("1MB"), 1024**2)
         self.assertEqual(parse_size("1GB"), 1024**3)
-        
+
         # Test raw numbers
         self.assertEqual(parse_size("1024"), 1024)
-        
+
         # Test with spaces
         self.assertEqual(parse_size("1 KB"), 1024)
-        
+
         # Test case insensitivity
         self.assertEqual(parse_size("1kb"), 1024)
-        
+
         # Test invalid input
         with self.assertRaises(ValueError):
             parse_size("invalid")
@@ -29,29 +30,31 @@ class TestCommons(unittest.TestCase):
         self.assertEqual(parse_time("1m"), 60)
         self.assertEqual(parse_time("1h"), 3600)
         self.assertEqual(parse_time("1d"), 86400)
-        
+
         # Test raw numbers
         self.assertEqual(parse_time("60"), 60)
-        
+
         # Test with spaces
         self.assertEqual(parse_time("1 h"), 3600)
-        
+
         # Test invalid input
         with self.assertRaises(ValueError):
             parse_time("invalid")
 
     def test_validate_rules_file(self):
         # Test valid rules
-        valid_rules = [{
-            "conditions": {"larger": "1KB", "newer": "1d"},
-            "action": {"type": "move", "target": "/path/to/target"},
-            "check_archive": True
-        }]
+        valid_rules = [
+            {
+                "conditions": {"larger": "1KB", "newer": "1d"},
+                "action": {"type": "move", "target": "/path/to/target"},
+                "check_archive": True,
+            }
+        ]
         self.assertEqual(validate_rules_file(valid_rules), [])
-        
+
         # Test invalid rules format
         self.assertTrue(len(validate_rules_file("not a list")) > 0)
-        
+
         # Test invalid rule structure
         invalid_rules = [
             "not a dict",
@@ -63,7 +66,7 @@ class TestCommons(unittest.TestCase):
             {"action": "not a dict"},
             {"action": {"type": "invalid"}},
             {"action": {"type": "move"}},
-            {"check_archive": "not a bool"}
+            {"check_archive": "not a bool"},
         ]
         for rule in invalid_rules:
             self.assertTrue(len(validate_rules_file([rule])) > 0)
@@ -72,30 +75,24 @@ class TestCommons(unittest.TestCase):
         valid_rules = [
             {
                 "conditions": {"larger": "10MB"},
-                "action": {"type": "move", "target": "/path/to/target"}
+                "action": {"type": "move", "target": "/path/to/target"},
             },
-            {
-                "conditions": {"contain": "keyword"},
-                "action": {"type": "delete"}
-            },
+            {"conditions": {"contain": "keyword"}, "action": {"type": "delete"}},
             {
                 "conditions": {"regex": "[a-z]+"},
-                "action": {"type": "compress", "target": "."}
-            }
+                "action": {"type": "compress", "target": "."},
+            },
         ]
 
         invalid_rules = [
             # Invalid condition type
             {"conditions": {"invalid_condition": "10MB"}, "action": {}},
-            
             # Invalid size value
             {"conditions": {"larger": "abc"}, "action": {}},
-
             # Invalid time value
             {"conditions": {"older": "abc"}, "action": {}},
-
             # Invalid regular expression
-            {"conditions": {"regex": "[invalid[regex]"}, "action": {}}
+            {"conditions": {"regex": "[invalid[regex]"}, "action": {}},
         ]
 
         for i, rule in enumerate(valid_rules):
@@ -111,18 +108,16 @@ class TestCommons(unittest.TestCase):
         valid_actions = [
             {"type": "move", "target": "/path/to/target"},
             {"type": "delete"},
-            {"type": "compress", "target": "."}
+            {"type": "compress", "target": "."},
         ]
 
         invalid_actions = [
             # Missing type
             {},
-            
             # Invalid action type
             {"type": "invalid_type"},
-            
             # Move action without target
-            {"type": "move"}
+            {"type": "move"},
         ]
 
         for i, action in enumerate(valid_actions):
@@ -139,13 +134,25 @@ class TestCommons(unittest.TestCase):
 
     def test_is_valid_rule_check_archive(self):
         valid_rules = [
-            {"conditions": {"larger": "10MB"}, "action": {"type": "delete"}, "check_archive": False},
-            {"conditions": {"larger": "10MB"}, "action": {"type": "delete"}, "check_archive": True}
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "check_archive": False,
+            },
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "check_archive": True,
+            },
         ]
 
         invalid_rules = [
             # Non-boolean check_archive value
-            {"conditions": {"larger": "10MB"}, "action": {"type": "delete"}, "check_archive": 42}
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "check_archive": 42,
+            }
         ]
 
         for i, rule in enumerate(valid_rules):

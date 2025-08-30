@@ -2,19 +2,19 @@
 Entities module for file and archive representations.
 """
 
-from .file import File
 from .compressed_archive import (
-    CompressedArchive,
-    ZipArchive,
-    RarArchive,
-    SevenZipArchive,
     ArchiveHandler,
-    ZipHandler,
-    RarHandler,
-    SevenZipHandler,
     ArchiveHandlerChain,
+    CompressedArchive,
+    RarArchive,
+    RarHandler,
+    SevenZipArchive,
+    SevenZipHandler,
+    ZipArchive,
+    ZipHandler,
     get_archive_manager,
 )
+from .file import File
 
 __all__ = [
     "File",

@@ -3,14 +3,13 @@ from typing import List, Optional
 
 import yaml
 
-from .base import Validator
-from ..config.organize_config import OrganizeConfig
 from ..commons import validations
 from ..commons.validations import Rules, validate_rules_file
+from ..config.organize_config import OrganizeConfig
+from .base import Validator
 
 # Usar el logger de commons
 logger = validations.get_logger()
-
 
 
 class RulesFileValidator(Validator):
@@ -25,7 +24,6 @@ class RulesFileValidator(Validator):
 
     Uses safe YAML loading to prevent code injection attacks.
     """
-
 
     def validate(self, config: OrganizeConfig) -> List[str]:
         """
@@ -44,14 +42,16 @@ class RulesFileValidator(Validator):
             List[str]: List of validation errors (empty if validation passes)
         """
         errors = []
-        
+
         # Step 1: Resolve rules file path
         if not config.rules_file:
             default_rules = config.target_dir / ".unclutter_rules.yaml"
             if default_rules.exists():
                 config.rules_file = str(default_rules)
             else:
-                errors.append("No rules file specified and no default .unclutter_rules.yaml found in target directory")
+                errors.append(
+                    "No rules file specified and no default .unclutter_rules.yaml found in target directory"
+                )
                 return errors
 
         # Step 2: Validate file path and accessibility
@@ -68,7 +68,9 @@ class RulesFileValidator(Validator):
         # Check file size (prevent extremely large files causing memory issues)
         file_size = rules_path.stat().st_size
         if file_size > 10 * 1024 * 1024:  # 10MB limit
-            errors.append(f"Rules file too large ({file_size / (1024*1024):.1f}MB, max 10MB)")
+            errors.append(
+                f"Rules file too large ({file_size / (1024 * 1024):.1f}MB, max 10MB)"
+            )
             return errors
 
         if file_size == 0:
@@ -102,7 +104,7 @@ class RulesFileValidator(Validator):
             errors.append(f"Unexpected error validating rules file: {e}")
 
         return errors
-    
+
     def _load_rules(self, rules_file: str) -> Optional[Rules]:
         """
         Load rules from YAML file with comprehensive error handling.
@@ -117,7 +119,7 @@ class RulesFileValidator(Validator):
             Loaded rules as Rules type or None if loading failed
         """
         try:
-            with open(rules_file, "r", encoding="utf-8") as f:
+            with open(rules_file, encoding="utf-8") as f:
                 content = f.read()
                 if not content.strip():
                     logger.error("Rules file is empty or contains only whitespace")
@@ -130,7 +132,9 @@ class RulesFileValidator(Validator):
                 return None
 
             if not isinstance(rules, list):
-                logger.error(f"Rules file must contain a list of rules, got {type(rules).__name__}: {rules}")
+                logger.error(
+                    f"Rules file must contain a list of rules, got {type(rules).__name__}: {rules}"
+                )
                 return None
 
             if not rules:  # Empty list
@@ -157,5 +161,3 @@ class RulesFileValidator(Validator):
         except Exception as e:
             logger.error(f"Unexpected error reading rules file '{rules_file}': {e}")
             return None
-        
-    

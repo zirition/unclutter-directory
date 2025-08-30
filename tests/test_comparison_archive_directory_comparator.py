@@ -2,10 +2,11 @@
 Tests for ArchiveDirectoryComparator.
 """
 
-import unittest
 import tempfile
+import unittest
 import zipfile
 from pathlib import Path
+
 import py7zr
 
 from unclutter_directory.comparison import ArchiveDirectoryComparator, ComparisonResult
@@ -34,7 +35,7 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
         """Test ZIP file without corresponding directory."""
         # Create a zip file
         zip_path = self.root / "test.zip"
-        with zipfile.ZipFile(zip_path, 'w') as zf:
+        with zipfile.ZipFile(zip_path, "w") as zf:
             zf.writestr("file1.txt", "content")
 
         result = self.comparator.find_potential_duplicates(self.root)
@@ -48,7 +49,7 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
 
         # Create zip file
         zip_path = self.root / "test.zip"
-        with zipfile.ZipFile(zip_path, 'w') as zf:
+        with zipfile.ZipFile(zip_path, "w") as zf:
             zf.writestr("file1.txt", "content")
 
         result = self.comparator.find_potential_duplicates(self.root)
@@ -64,7 +65,7 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
 
         # Create 7z file
         seven_zip_path = self.root / "test.7z"
-        with py7zr.SevenZipFile(seven_zip_path, 'w') as szf:
+        with py7zr.SevenZipFile(seven_zip_path, "w") as szf:
             szf.writestr("file1.txt", "content")
 
         result = self.comparator.find_potential_duplicates(self.root)
@@ -82,7 +83,7 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
 
         # Create identical zip file
         zip_path = self.root / "test.zip"
-        with zipfile.ZipFile(zip_path, 'w') as zf:
+        with zipfile.ZipFile(zip_path, "w") as zf:
             zf.write(test_dir / "file1.txt", "file1.txt")
             zf.write(test_dir / "file2.txt", "file2.txt")
 
@@ -99,7 +100,7 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
 
         # Create different zip file
         zip_path = self.root / "test.zip"
-        with zipfile.ZipFile(zip_path, 'w') as zf:
+        with zipfile.ZipFile(zip_path, "w") as zf:
             zf.writestr("file2.txt", "different content")
 
         result = self.comparator.compare_archive_and_directory(zip_path, test_dir)
@@ -116,7 +117,9 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
         unsupported_path = self.root / "test.tar.gz"
         unsupported_path.write_text("fake archive")
 
-        result = self.comparator.compare_archive_and_directory(unsupported_path, test_dir)
+        result = self.comparator.compare_archive_and_directory(
+            unsupported_path, test_dir
+        )
         self.assertFalse(result.identical)
         self.assertIn("Unsupported archive format", result.differences[0])
 
@@ -131,11 +134,11 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
         )
 
         summary = self.comparator.get_comparison_summary([result1, result2])
-        self.assertEqual(summary['total_comparisons'], 2)
-        self.assertEqual(summary['identical'], 1)
-        self.assertEqual(summary['different'], 1)
-        self.assertEqual(summary['identical_percentage'], 50.0)
+        self.assertEqual(summary["total_comparisons"], 2)
+        self.assertEqual(summary["identical"], 1)
+        self.assertEqual(summary["different"], 1)
+        self.assertEqual(summary["identical_percentage"], 50.0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

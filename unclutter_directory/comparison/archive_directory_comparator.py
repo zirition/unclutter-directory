@@ -2,14 +2,14 @@
 Archive Directory Comparator - Compares compressed files with their corresponding directories.
 """
 
-from pathlib import Path
-from typing import List, Dict, Tuple
 import os
+from pathlib import Path
+from typing import Dict, List, Tuple
 
-from .directory_analyzer import DirectoryAnalyzer
-from ..entities.file import File
-from ..entities.compressed_archive import get_archive_manager
 from ..commons import validations
+from ..entities.compressed_archive import get_archive_manager
+from ..entities.file import File
+from .directory_analyzer import DirectoryAnalyzer
 
 logger = validations.get_logger()
 
@@ -17,9 +17,15 @@ logger = validations.get_logger()
 class ComparisonResult:
     """Result of comparing an archive with its corresponding directory."""
 
-    def __init__(self, archive_path: Path, directory_path: Path, identical: bool,
-                 archive_files: List[File], directory_files: List[File],
-                 differences: List[str] = None):
+    def __init__(
+        self,
+        archive_path: Path,
+        directory_path: Path,
+        identical: bool,
+        archive_files: List[File],
+        directory_files: List[File],
+        differences: List[str] = None,
+    ):
         self.archive_path = archive_path
         self.directory_path = directory_path
         self.identical = identical
@@ -37,7 +43,6 @@ class ArchiveDirectoryComparator:
     Compares compressed archive files (ZIP, RAR, 7Z) with their corresponding directories
     to determine if they contain identical file structures.
     """
-
 
     def __init__(self, include_hidden: bool = False):
         """
@@ -63,7 +68,7 @@ class ArchiveDirectoryComparator:
 
         try:
             # Walk through all files in target directory
-            for root, dirs, files in os.walk(target_dir):
+            for root, _dirs, files in os.walk(target_dir):
                 root_path = Path(root)
 
                 for file_name in files:
@@ -80,13 +85,17 @@ class ArchiveDirectoryComparator:
                         if expected_dir_path.exists() and expected_dir_path.is_dir():
                             potential_duplicates.append((file_path, expected_dir_path))
 
-        except (OSError, IOError) as e:
+        except OSError as e:
             logger.error(f"Error scanning directory {target_dir}: {e}")
 
-        logger.info(f"Found {len(potential_duplicates)} potential archive-directory pairs for comparison")
+        logger.info(
+            f"Found {len(potential_duplicates)} potential archive-directory pairs for comparison"
+        )
         return potential_duplicates
 
-    def compare_archive_and_directory(self, archive_path: Path, directory_path: Path) -> ComparisonResult:
+    def compare_archive_and_directory(
+        self, archive_path: Path, directory_path: Path
+    ) -> ComparisonResult:
         """
         Compare an archive file with its corresponding directory.
 
@@ -102,8 +111,12 @@ class ArchiveDirectoryComparator:
             archive_manager = self._get_archive_manager(archive_path)
             if not archive_manager:
                 return ComparisonResult(
-                    archive_path, directory_path, False, [], [],
-                    [f"Unsupported archive format: {archive_path.suffix}"]
+                    archive_path,
+                    directory_path,
+                    False,
+                    [],
+                    [],
+                    [f"Unsupported archive format: {archive_path.suffix}"],
                 )
 
             # Get files from archive
@@ -119,15 +132,23 @@ class ArchiveDirectoryComparator:
             identical = len(differences) == 0
 
             return ComparisonResult(
-                archive_path, directory_path, identical,
-                archive_files, directory_files, differences
+                archive_path,
+                directory_path,
+                identical,
+                archive_files,
+                directory_files,
+                differences,
             )
 
         except Exception as e:
             logger.error(f"Error comparing {archive_path} with {directory_path}: {e}")
             return ComparisonResult(
-                archive_path, directory_path, False, [], [],
-                [f"Comparison failed: {str(e)}"]
+                archive_path,
+                directory_path,
+                False,
+                [],
+                [],
+                [f"Comparison failed: {str(e)}"],
             )
 
     def _get_archive_manager(self, archive_path: Path):
@@ -147,7 +168,9 @@ class ArchiveDirectoryComparator:
         archive_file = File.from_path(archive_path)
         return get_archive_manager(archive_file)
 
-    def _compare_file_structures(self, archive_files: List[File], directory_files: List[File]) -> List[str]:
+    def _compare_file_structures(
+        self, archive_files: List[File], directory_files: List[File]
+    ) -> List[str]:
         """
         Compare file structures from archive and directory.
 
@@ -167,12 +190,19 @@ class ArchiveDirectoryComparator:
         # Find files that are in archive but not in directory
         missing_in_directory = archive_paths - directory_paths
         if missing_in_directory:
-            differences.extend([f"Missing in directory: {path}" for path in sorted(missing_in_directory)])
+            differences.extend(
+                [
+                    f"Missing in directory: {path}"
+                    for path in sorted(missing_in_directory)
+                ]
+            )
 
         # Find files that are in directory but not in archive
         extra_in_directory = directory_paths - archive_paths
         if extra_in_directory:
-            differences.extend([f"Extra in directory: {path}" for path in sorted(extra_in_directory)])
+            differences.extend(
+                [f"Extra in directory: {path}" for path in sorted(extra_in_directory)]
+            )
 
         # Compare file sizes and modification times for common files
         common_files = archive_paths & directory_paths
@@ -182,8 +212,10 @@ class ArchiveDirectoryComparator:
 
             # Compare sizes
             if archive_file.size != directory_file.size:
-                differences.append(f"Size mismatch for {file_path}: "
-                                 f"archive={archive_file.size}, directory={directory_file.size}")
+                differences.append(
+                    f"Size mismatch for {file_path}: "
+                    f"archive={archive_file.size}, directory={directory_file.size}"
+                )
 
         return differences
 
@@ -202,8 +234,8 @@ class ArchiveDirectoryComparator:
         different = total - identical
 
         return {
-            'total_comparisons': total,
-            'identical': identical,
-            'different': different,
-            'identical_percentage': (identical / total * 100) if total > 0 else 0
+            "total_comparisons": total,
+            "identical": identical,
+            "different": different,
+            "identical_percentage": (identical / total * 100) if total > 0 else 0,
         }

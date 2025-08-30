@@ -3,8 +3,8 @@ Delete strategy for the check-duplicates command.
 Provides both interactive and non-interactive deletion of duplicate directories.
 """
 
-from pathlib import Path
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from ..commons import validations
 
@@ -28,7 +28,9 @@ class DeleteConfirmationStrategy(ABC):
         """
         pass
 
-    def perform_deletion(self, directory_path: Path, archive_path: Path, dry_run: bool = False) -> bool:
+    def perform_deletion(
+        self, directory_path: Path, archive_path: Path, dry_run: bool = False
+    ) -> bool:
         """
         Perform the actual directory deletion.
 
@@ -46,6 +48,7 @@ class DeleteConfirmationStrategy(ABC):
 
         try:
             import shutil
+
             shutil.rmtree(directory_path)
             logger.info(f"✅ Deleted duplicate directory: {directory_path}")
             return True
@@ -74,7 +77,9 @@ class InteractiveDeleteStrategy(DeleteConfirmationStrategy):
         """
         return self._prompt_user_for_deletion(directory_path, archive_path)
 
-    def _prompt_user_for_deletion(self, directory_path: Path, archive_path: Path) -> str:
+    def _prompt_user_for_deletion(
+        self, directory_path: Path, archive_path: Path
+    ) -> str:
         """
         Prompt user for directory deletion confirmation.
 
@@ -98,7 +103,7 @@ class InteractiveDeleteStrategy(DeleteConfirmationStrategy):
                 print("Invalid option. Please choose Y(es) or N(o).")
             except (EOFError, KeyboardInterrupt):
                 print("\nOperation cancelled by user.")
-                raise KeyboardInterrupt
+                raise KeyboardInterrupt from None
 
 
 class AutomaticDeleteStrategy(DeleteConfirmationStrategy):
@@ -144,15 +149,23 @@ class DryRunDeleteStrategy(DeleteConfirmationStrategy):
         """Always returns False in dry run mode."""
         return False
 
-    def perform_deletion(self, directory_path: Path, archive_path: Path, dry_run: bool = False) -> bool:
+    def perform_deletion(
+        self, directory_path: Path, archive_path: Path, dry_run: bool = False
+    ) -> bool:
         """Override to ensure dry run behavior is always true."""
-        logger.info(f"[DRY RUN] Would delete duplicate directory: {directory_path.name} "
-                   f"(identical to {archive_path.name})")
+        logger.info(
+            f"[DRY RUN] Would delete duplicate directory: {directory_path.name} "
+            f"(identical to {archive_path.name})"
+        )
         return True  # Always successful in dry run
 
 
-def create_delete_strategy(dry_run: bool = False, always_delete: bool = False,
-                          never_delete: bool = False, interactive: bool = True):
+def create_delete_strategy(
+    dry_run: bool = False,
+    always_delete: bool = False,
+    never_delete: bool = False,
+    interactive: bool = True,
+):
     """
     Factory function to create the appropriate delete strategy.
 
@@ -168,10 +181,14 @@ def create_delete_strategy(dry_run: bool = False, always_delete: bool = False,
     if dry_run:
         return DryRunDeleteStrategy()
     elif always_delete or never_delete:
-        return AutomaticDeleteStrategy(always_delete=always_delete, never_delete=never_delete)
+        return AutomaticDeleteStrategy(
+            always_delete=always_delete, never_delete=never_delete
+        )
     elif interactive:
         return InteractiveDeleteStrategy()
     else:
         # Default to never delete for safety
-        logger.warning("No explicit delete strategy specified, defaulting to never delete")
+        logger.warning(
+            "No explicit delete strategy specified, defaulting to never delete"
+        )
         return AutomaticDeleteStrategy(always_delete=False, never_delete=True)

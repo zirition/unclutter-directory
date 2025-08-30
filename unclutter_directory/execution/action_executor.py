@@ -13,10 +13,11 @@ The module uses conflict resolution to avoid overwriting existing files and prov
 comprehensive error handling for all file operations.
 """
 
-from typing import Dict, List, Optional
 from pathlib import Path
+from typing import Dict, List, Optional
 
 from unclutter_directory.commons import validations
+
 from .action_strategy_factory import ActionStrategyFactory
 
 logger = validations.get_logger()
@@ -38,7 +39,9 @@ class ActionExecutor:
         strategy_factory (ActionStrategyFactory): Factory for creating action strategies
     """
 
-    def __init__(self, action: Dict, strategy_factory: Optional[ActionStrategyFactory] = None):
+    def __init__(
+        self, action: Dict, strategy_factory: Optional[ActionStrategyFactory] = None
+    ):
         """Initialize ActionExecutor with action configuration.
 
         Args:
@@ -63,7 +66,6 @@ class ActionExecutor:
             List of supported action type strings
         """
         return self.strategy_factory.get_available_actions()
-
 
     def execute_action(self, file_path: Path, parent_path: Path) -> None:
         """Execute the configured action on a file with validation and error handling.
@@ -98,7 +100,9 @@ class ActionExecutor:
         # Create strategy instance
         strategy = self.strategy_factory.create_strategy(action_type, logger)
         if not strategy:
-            logger.warning(f"Unsupported action type '{action_type}' for file {file_path}")
+            logger.warning(
+                f"Unsupported action type '{action_type}' for file {file_path}"
+            )
             return
 
         # Execute action using strategy

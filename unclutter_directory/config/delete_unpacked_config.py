@@ -12,12 +12,14 @@ logger = validations.get_logger()
 class DeleteUnpackedConfig:
     """Configuration for the delete-unpacked operation."""
 
-    def __init__(self,
-                 target_dir: Path,
-                 dry_run: bool = True,  # Default to True for safety
-                 always_delete: bool = False,
-                 never_delete: bool = False,
-                 include_hidden: bool = False):
+    def __init__(
+        self,
+        target_dir: Path,
+        dry_run: bool = True,  # Default to True for safety
+        always_delete: bool = False,
+        never_delete: bool = False,
+        include_hidden: bool = False,
+    ):
         """
         Initialize check duplicates configuration
 

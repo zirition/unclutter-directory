@@ -2,20 +2,20 @@
 Tests for CompressedArchive implementations and handlers.
 """
 
-import unittest
 import tempfile
+import unittest
 import zipfile
 from pathlib import Path
 
 from unclutter_directory.entities.compressed_archive import (
-    ZipArchive,
-    RarArchive,
-    SevenZipArchive,
     ArchiveHandlerChain,
-    ZipHandler,
+    RarArchive,
     RarHandler,
+    SevenZipArchive,
     SevenZipHandler,
-    get_archive_manager
+    ZipArchive,
+    ZipHandler,
+    get_archive_manager,
 )
 from unclutter_directory.entities.file import File
 
@@ -36,7 +36,7 @@ class TestCompressedArchive(unittest.TestCase):
         """Test ZipArchive get_files method."""
         # Create a test zip file
         zip_path = self.root / "test.zip"
-        with zipfile.ZipFile(zip_path, 'w') as zf:
+        with zipfile.ZipFile(zip_path, "w") as zf:
             zf.writestr("file1.txt", "content1")
             zf.writestr("file2.txt", "content2")
 
@@ -122,5 +122,5 @@ class TestCompressedArchive(unittest.TestCase):
         self.assertIsInstance(archive, RarArchive)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

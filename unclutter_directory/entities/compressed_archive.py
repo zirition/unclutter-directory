@@ -1,15 +1,16 @@
 import zipfile
-import rarfile
-from rarfile import RarFile
-import py7zr
-
 from abc import ABC, abstractmethod
 from typing import List, Optional
+
+import py7zr
+import rarfile
+from rarfile import RarFile
 
 from unclutter_directory.commons import validations
 from unclutter_directory.entities.file import File
 
 logger = validations.get_logger()
+
 
 class CompressedArchive(ABC):
     @abstractmethod
@@ -37,6 +38,7 @@ class ZipArchive(CompressedArchive):
         except zipfile.BadZipFile:
             logger.error(f"❌ Error reading zip file: {archive_path}")
             return []
+
 
 class RarArchive(CompressedArchive):
     def __init__(self):
@@ -67,7 +69,7 @@ class SevenZipArchive(CompressedArchive):
     def get_files(self, file: File) -> List[File]:
         archive_path = file.path / file.name
         try:
-            with py7zr.SevenZipFile(archive_path, mode='r') as szf:
+            with py7zr.SevenZipFile(archive_path, mode="r") as szf:
                 return [
                     File(
                         file.path,
@@ -117,7 +119,7 @@ class ZipHandler(ArchiveHandler):
     """Handler for ZIP archive files."""
 
     def can_handle(self, file: File) -> bool:
-        return file.name.lower().endswith('.zip')
+        return file.name.lower().endswith(".zip")
 
     def create_instance(self) -> CompressedArchive:
         return ZipArchive()
@@ -127,7 +129,7 @@ class RarHandler(ArchiveHandler):
     """Handler for RAR archive files."""
 
     def can_handle(self, file: File) -> bool:
-        return file.name.lower().endswith('.rar')
+        return file.name.lower().endswith(".rar")
 
     def create_instance(self) -> CompressedArchive:
         return RarArchive()
@@ -137,7 +139,7 @@ class SevenZipHandler(ArchiveHandler):
     """Handler for 7Z archive files."""
 
     def can_handle(self, file: File) -> bool:
-        return file.name.lower().endswith('.7z')
+        return file.name.lower().endswith(".7z")
 
     def create_instance(self) -> CompressedArchive:
         return SevenZipArchive()
@@ -210,4 +212,3 @@ def get_archive_manager(file: File) -> Optional[CompressedArchive]:
     """
     handler_chain = ArchiveHandlerChain()
     return handler_chain.get_archive_handler(file)
-

@@ -1,9 +1,10 @@
-from pathlib import Path
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
+
 from unclutter_directory.entities.compressed_archive import CompressedArchive
-from unclutter_directory.file_operations.file_matcher import FileMatcher
 from unclutter_directory.entities.file import File
+from unclutter_directory.file_operations.file_matcher import FileMatcher
 
 
 class TestFileMatcher(unittest.TestCase):
@@ -86,7 +87,9 @@ class TestFileMatcher(unittest.TestCase):
         self.assertIsNone(matched_rule)
 
     def test_archive_match(self):
-        with patch("unclutter_directory.file_operations.file_matcher.get_archive_manager") as mock_get_archive:
+        with patch(
+            "unclutter_directory.file_operations.file_matcher.get_archive_manager"
+        ) as mock_get_archive:
             mock_archive_manager = MagicMock(spec=CompressedArchive)
             mock_archive_manager.get_files.return_value = [self.file_in_zip]
             mock_get_archive.return_value = mock_archive_manager
@@ -157,6 +160,7 @@ class TestFileMatcher(unittest.TestCase):
         self.file1.name = "EXAMPLE1.TXT"
         matched_rule = matcher.match(self.file1)
         self.assertIsNone(matched_rule)
+
 
 if __name__ == "__main__":
     unittest.main()

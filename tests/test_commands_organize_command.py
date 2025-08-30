@@ -1,12 +1,12 @@
-import unittest
 import tempfile
+import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, call, patch
 
 from unclutter_directory.commands.organize_command import OrganizeCommand
 from unclutter_directory.config.organize_config import OrganizeConfig
-from unclutter_directory.validation.validation_chain import ValidationChain
 from unclutter_directory.factories.component_factory import ComponentFactory
+from unclutter_directory.validation.validation_chain import ValidationChain
 
 
 class TestOrganizeCommand(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestOrganizeCommand(unittest.TestCase):
         self.assertIsInstance(command.factory, ComponentFactory)
         self.assertEqual(command.rule_responses, {})
 
-    @patch('unclutter_directory.commands.organize_command.logging')
+    @patch("unclutter_directory.commands.organize_command.logging")
     def test_setup_logging_quiet_mode(self, mock_logging):
         """Test logging setup in quiet mode"""
         self.mock_config.quiet = True
@@ -51,9 +51,9 @@ class TestOrganizeCommand(unittest.TestCase):
         # Verify basicConfig is called with ERROR level
         mock_logging.basicConfig.assert_called_once()
         call_args = mock_logging.basicConfig.call_args[1]
-        self.assertEqual(call_args['level'], mock_logging.ERROR)
+        self.assertEqual(call_args["level"], mock_logging.ERROR)
 
-    @patch('unclutter_directory.commands.organize_command.logging')
+    @patch("unclutter_directory.commands.organize_command.logging")
     def test_setup_logging_verbose_mode(self, mock_logging):
         """Test logging setup in verbose mode"""
         self.mock_config.quiet = False
@@ -64,7 +64,7 @@ class TestOrganizeCommand(unittest.TestCase):
         # Verify basicConfig is called with INFO level
         mock_logging.basicConfig.assert_called_once()
         call_args = mock_logging.basicConfig.call_args[1]
-        self.assertEqual(call_args['level'], mock_logging.INFO)
+        self.assertEqual(call_args["level"], mock_logging.INFO)
 
 
 class TestOrganizeCommandValidation(unittest.TestCase):
@@ -82,8 +82,8 @@ class TestOrganizeCommandValidation(unittest.TestCase):
         """Clean up temporary directory"""
         self.temp_dir.cleanup()
 
-    @patch('unclutter_directory.commands.organize_command.ValidationChain')
-    @patch('unclutter_directory.commands.organize_command.sys.exit')
+    @patch("unclutter_directory.commands.organize_command.ValidationChain")
+    @patch("unclutter_directory.commands.organize_command.sys.exit")
     def test_validate_config_no_errors(self, mock_exit, mock_validation_chain_cls):
         """Test validation with no errors"""
         # Setup mock validation chain
@@ -98,10 +98,12 @@ class TestOrganizeCommandValidation(unittest.TestCase):
         mock_validation_chain.validate.assert_called_once_with(self.mock_config)
         mock_exit.assert_not_called()
 
-    @patch('unclutter_directory.commands.organize_command.logger')
-    @patch('unclutter_directory.commands.organize_command.ValidationChain')
-    @patch('unclutter_directory.commands.organize_command.sys.exit')
-    def test_validate_config_with_errors(self, mock_exit, mock_validation_chain_cls, mock_logger):
+    @patch("unclutter_directory.commands.organize_command.logger")
+    @patch("unclutter_directory.commands.organize_command.ValidationChain")
+    @patch("unclutter_directory.commands.organize_command.sys.exit")
+    def test_validate_config_with_errors(
+        self, mock_exit, mock_validation_chain_cls, mock_logger
+    ):
         """Test validation with errors"""
         # Setup mock validation chain with errors
         mock_validation_chain = Mock()
@@ -118,7 +120,7 @@ class TestOrganizeCommandValidation(unittest.TestCase):
         expected_calls = [
             call("Configuration validation failed:"),
             call("  • Error 1"),
-            call("  • Error 2")
+            call("  • Error 2"),
         ]
         self.assertEqual(mock_logger.error.call_args_list, expected_calls)
 
@@ -149,10 +151,12 @@ class TestOrganizeCommandProcessing(unittest.TestCase):
         """Clean up temporary directory"""
         self.temp_dir.cleanup()
 
-    @patch('unclutter_directory.commands.organize_command.logger')
-    @patch('unclutter_directory.commands.organize_command.FileProcessor')
-    @patch('unclutter_directory.commands.organize_command.ComponentFactory')
-    def test_process_files_no_files_found(self, mock_factory_cls, mock_processor_cls, mock_logger):
+    @patch("unclutter_directory.commands.organize_command.logger")
+    @patch("unclutter_directory.commands.organize_command.FileProcessor")
+    @patch("unclutter_directory.commands.organize_command.ComponentFactory")
+    def test_process_files_no_files_found(
+        self, mock_factory_cls, mock_processor_cls, mock_logger
+    ):
         """Test processing when no files are found"""
         # Setup factory mocks
         mock_factory = Mock()
@@ -173,18 +177,19 @@ class TestOrganizeCommandProcessing(unittest.TestCase):
 
         # Verify collector was called
         self.mock_collector.collect.assert_called_once_with(
-            self.mock_config.target_dir,
-            self.mock_config.rules_file_path
+            self.mock_config.target_dir, self.mock_config.rules_file_path
         )
 
         # Verify no processing occurred
         mock_processor_cls.assert_not_called()
         mock_logger.info.assert_called_once_with("No files found to process")
 
-    @patch('unclutter_directory.commands.organize_command.logger')
-    @patch('unclutter_directory.commands.organize_command.FileProcessor')
-    @patch('unclutter_directory.commands.organize_command.ComponentFactory')
-    def test_process_files_successful_processing(self, mock_factory_cls, mock_processor_cls, mock_logger):
+    @patch("unclutter_directory.commands.organize_command.logger")
+    @patch("unclutter_directory.commands.organize_command.FileProcessor")
+    @patch("unclutter_directory.commands.organize_command.ComponentFactory")
+    def test_process_files_successful_processing(
+        self, mock_factory_cls, mock_processor_cls, mock_logger
+    ):
         """Test successful file processing"""
         # Setup factory mocks
         mock_factory = Mock()
@@ -202,7 +207,7 @@ class TestOrganizeCommandProcessing(unittest.TestCase):
             "total_files": 2,
             "processed_files": 2,
             "skipped_files": 0,
-            "errors": 0
+            "errors": 0,
         }
         mock_processor = Mock()
         mock_processor.process_files.return_value = test_stats
@@ -220,7 +225,9 @@ class TestOrganizeCommandProcessing(unittest.TestCase):
         mock_processor_cls.assert_called_once_with(
             self.mock_matcher, self.mock_strategy, command.rule_responses
         )
-        mock_processor.process_files.assert_called_once_with(test_files, self.mock_config.target_dir)
+        mock_processor.process_files.assert_called_once_with(
+            test_files, self.mock_config.target_dir
+        )
 
         # Verify summary logging was called
         self.assertTrue(mock_logger.info.called)
@@ -229,7 +236,7 @@ class TestOrganizeCommandProcessing(unittest.TestCase):
 class TestOrganizeCommandLogging(unittest.TestCase):
     """Tests for processing summary logging"""
 
-    @patch('unclutter_directory.commands.organize_command.logger')
+    @patch("unclutter_directory.commands.organize_command.logger")
     def test_log_processing_summary_dry_run(self, mock_logger):
         """Test logging summary in dry run mode"""
         mock_config = Mock()
@@ -242,7 +249,7 @@ class TestOrganizeCommandLogging(unittest.TestCase):
             "total_files": 10,
             "processed_files": 8,
             "skipped_files": 2,
-            "errors": 0
+            "errors": 0,
         }
 
         command._log_processing_summary(stats)
@@ -255,7 +262,7 @@ class TestOrganizeCommandLogging(unittest.TestCase):
         self.assertEqual(mock_logger.info.call_args_list, expected_calls)
         mock_logger.warning.assert_not_called()
 
-    @patch('unclutter_directory.commands.organize_command.logger')
+    @patch("unclutter_directory.commands.organize_command.logger")
     def test_log_processing_summary_normal_run(self, mock_logger):
         """Test logging summary in normal run mode"""
         mock_config = Mock()
@@ -268,7 +275,7 @@ class TestOrganizeCommandLogging(unittest.TestCase):
             "total_files": 10,
             "processed_files": 7,
             "skipped_files": 2,
-            "errors": 1
+            "errors": 1,
         }
 
         command._log_processing_summary(stats)
@@ -279,7 +286,9 @@ class TestOrganizeCommandLogging(unittest.TestCase):
             call("  • 2 files skipped (no matching rules)"),
         ]
         self.assertEqual(mock_logger.info.call_args_list, expected_calls)
-        mock_logger.warning.assert_called_once_with("  • 1 files had errors during processing")
+        mock_logger.warning.assert_called_once_with(
+            "  • 1 files had errors during processing"
+        )
 
 
 class TestOrganizeCommandExecution(unittest.TestCase):
@@ -297,10 +306,12 @@ class TestOrganizeCommandExecution(unittest.TestCase):
         """Clean up temporary directory"""
         self.temp_dir.cleanup()
 
-    @patch.object(OrganizeCommand, '_process_files')
-    @patch.object(OrganizeCommand, '_validate_config')
-    @patch.object(OrganizeCommand, '_setup_logging')
-    def test_execute_successful_flow(self, mock_setup_logging, mock_validate_config, mock_process_files):
+    @patch.object(OrganizeCommand, "_process_files")
+    @patch.object(OrganizeCommand, "_validate_config")
+    @patch.object(OrganizeCommand, "_setup_logging")
+    def test_execute_successful_flow(
+        self, mock_setup_logging, mock_validate_config, mock_process_files
+    ):
         """Test successful execution flow"""
         command = OrganizeCommand(self.mock_config)
         command.execute()
@@ -310,34 +321,36 @@ class TestOrganizeCommandExecution(unittest.TestCase):
         mock_validate_config.assert_called_once()
         mock_process_files.assert_called_once()
 
-    @patch('unclutter_directory.commands.organize_command.logger')
-    @patch.object(OrganizeCommand, '_setup_logging')
+    @patch("unclutter_directory.commands.organize_command.logger")
+    @patch.object(OrganizeCommand, "_setup_logging")
     def test_execute_keyboard_interrupt(self, mock_setup_logging, mock_logger):
         """Test execution with KeyboardInterrupt"""
         command = OrganizeCommand(self.mock_config)
 
         # Make _validate_config raise KeyboardInterrupt
-        with patch.object(command, '_validate_config', side_effect=KeyboardInterrupt()):
+        with patch.object(command, "_validate_config", side_effect=KeyboardInterrupt()):
             command.execute()
 
             # Verify interrupt was handled
             mock_logger.info.assert_called_once_with("\nOperation cancelled by user")
 
-    @patch('unclutter_directory.commands.organize_command.logger')
-    @patch.object(OrganizeCommand, '_setup_logging')
+    @patch("unclutter_directory.commands.organize_command.logger")
+    @patch.object(OrganizeCommand, "_setup_logging")
     def test_execute_generic_exception(self, mock_setup_logging, mock_logger):
         """Test execution with generic exception"""
         command = OrganizeCommand(self.mock_config)
 
         # Make _validate_config raise generic exception
         test_exception = ValueError("Test error")
-        with patch.object(command, '_validate_config', side_effect=test_exception):
+        with patch.object(command, "_validate_config", side_effect=test_exception):
             with self.assertRaises(ValueError):
                 command.execute()
 
             # Verify error was logged
-            mock_logger.error.assert_called_once_with(f"Unexpected error during organize operation: {test_exception}")
+            mock_logger.error.assert_called_once_with(
+                f"Unexpected error during organize operation: {test_exception}"
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(failfast=True)

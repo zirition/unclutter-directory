@@ -1,10 +1,8 @@
-from typing import List, Dict
-
-from ..entities.file import File
-from ..entities.compressed_archive import CompressedArchive, get_archive_manager
+from typing import Dict, List
 
 from ..commons.validations import parse_size, parse_time
-
+from ..entities.compressed_archive import CompressedArchive, get_archive_manager
+from ..entities.file import File
 
 """
 FileMatcher provides functionality to match files against a set of predefined rules.
@@ -12,6 +10,7 @@ FileMatcher provides functionality to match files against a set of predefined ru
 The class supports various matching conditions including filename patterns, size constraints,
 age constraints, and archive content inspection for compressed files.
 """
+
 
 class FileMatcher:
     def __init__(self, rules: List[Dict]):
