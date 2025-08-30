@@ -34,12 +34,10 @@ class ComparisonResult:
 
 class ArchiveDirectoryComparator:
     """
-    Compares compressed archive files (ZIP, RAR) with their corresponding directories
+    Compares compressed archive files (ZIP, RAR, 7Z) with their corresponding directories
     to determine if they contain identical file structures.
     """
 
-    # Supported archive extensions
-    SUPPORTED_EXTENSIONS = {'.zip', '.rar'}
 
     def __init__(self, include_hidden: bool = False):
         """
@@ -72,7 +70,8 @@ class ArchiveDirectoryComparator:
                     file_path = root_path / file_name
 
                     # Check if it's a supported archive file
-                    if file_path.suffix.lower() in self.SUPPORTED_EXTENSIONS:
+                    archive_file = File.from_path(file_path)
+                    if get_archive_manager(archive_file):
                         # Extract directory name (remove extension)
                         dir_name = file_path.stem
 

@@ -1,6 +1,7 @@
 import zipfile
 import rarfile
 from rarfile import RarFile
+import py7zr
 
 from abc import ABC, abstractmethod
 from typing import List, Optional
@@ -58,8 +59,33 @@ class RarArchive(CompressedArchive):
             logger.error(f"❌ Error reading rar file: {archive_path}")
             return []
 
-# Chain of Responsibility Pattern Implementation
 
+class SevenZipArchive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> List[File]:
+        archive_path = file.path / file.name
+        try:
+            with py7zr.SevenZipFile(archive_path, mode='r') as szf:
+                return [
+                    File(
+                        file.path,
+                        info.filename,
+                        info.modification_time,
+                        info.size,
+                    )
+                    for info in szf.archive.infoheader.files
+                ]
+        except (py7zr.Bad7zFile, py7zr.ArchiveError) as e:
+            logger.error(f"❌ Error reading 7z file {archive_path}: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"❌ Unexpected error reading 7z file {archive_path}: {e}")
+            return []
+
+
+# Chain of Responsibility Pattern Implementation
 class ArchiveHandler(ABC):
     """Abstract base class for archive handlers in the chain"""
 
@@ -107,6 +133,16 @@ class RarHandler(ArchiveHandler):
         return RarArchive()
 
 
+class SevenZipHandler(ArchiveHandler):
+    """Handler for 7Z archive files."""
+
+    def can_handle(self, file: File) -> bool:
+        return file.name.lower().endswith('.7z')
+
+    def create_instance(self) -> CompressedArchive:
+        return SevenZipArchive()
+
+
 class ArchiveHandlerChain:
     """
     Chain of responsibility pattern for archive file handling.
@@ -118,6 +154,7 @@ class ArchiveHandlerChain:
         self.handlers: List[ArchiveHandler] = [
             ZipHandler(),
             RarHandler(),
+            SevenZipHandler(),
         ]
 
     def add_handler(self, handler: ArchiveHandler) -> None:
@@ -156,7 +193,8 @@ def get_archive_manager(file: File) -> Optional[CompressedArchive]:
     Factory function that uses Chain of Responsibility to get the appropriate archive manager.
 
     This function replaces the hard-coded if-elif logic in FileMatcher and ArchiveDirectoryComparator
-    and provides a cleaner, more extensible way to handle different archive formats.
+    and provides a cleaner, more extensible way to handle different archive formats
+    such as ZIP, RAR, and 7Z.
 
     Args:
         file: The file to get an archive manager for
@@ -173,23 +211,3 @@ def get_archive_manager(file: File) -> Optional[CompressedArchive]:
     handler_chain = ArchiveHandlerChain()
     return handler_chain.get_archive_handler(file)
 
-
-# Convenience function for backward compatibility
-def create_archive_manager(file_extension: str) -> Optional[CompressedArchive]:
-    """
-    Create an archive manager based on file extension.
-    Useful for cases where you only have the extension.
-
-    Args:
-        file_extension: File extension (e.g., '.zip', '.rar')
-
-    Returns:
-        CompressedArchive instance or None if unsupported
-    """
-    # Create a dummy file just to use the chain logic
-    class DummyFile:
-        def __init__(self, name: str):
-            self.name = name
-
-    dummy_file = DummyFile(f"dummy{file_extension.lower()}")
-    return get_archive_manager(dummy_file)

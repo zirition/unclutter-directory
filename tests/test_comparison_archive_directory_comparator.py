@@ -6,6 +6,7 @@ import unittest
 import tempfile
 import zipfile
 from pathlib import Path
+import py7zr
 
 from unclutter_directory.comparison import ArchiveDirectoryComparator, ComparisonResult
 
@@ -53,6 +54,22 @@ class TestArchiveDirectoryComparator(unittest.TestCase):
         result = self.comparator.find_potential_duplicates(self.root)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0][0], zip_path)
+        self.assertEqual(result[0][1], test_dir)
+
+    def test_7z_with_matching_directory(self):
+        """Test 7Z file with corresponding directory."""
+        # Create directory
+        test_dir = self.root / "test"
+        test_dir.mkdir()
+
+        # Create 7z file
+        seven_zip_path = self.root / "test.7z"
+        with py7zr.SevenZipFile(seven_zip_path, 'w') as szf:
+            szf.writestr("file1.txt", "content")
+
+        result = self.comparator.find_potential_duplicates(self.root)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0][0], seven_zip_path)
         self.assertEqual(result[0][1], test_dir)
 
     def test_compare_identical_structures(self):
