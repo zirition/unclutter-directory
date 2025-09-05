@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from ..commons import get_logger
 
@@ -21,15 +21,12 @@ class FileCollector:
         """
         self.include_hidden = include_hidden
 
-    def collect(
-        self, target_dir: Path, rules_file_path: Optional[Path] = None
-    ) -> List[Path]:
+    def collect(self, target_dir: Path) -> List[Path]:
         """
         Collect files from target directory
 
         Args:
             target_dir: Directory to collect files from
-            rules_file_path: Rules file to exclude from collection
 
         Returns:
             List of file paths that should be processed
@@ -53,33 +50,18 @@ class FileCollector:
                 logger.debug(f"Skipping hidden item: {item}")
                 continue
 
-            # Filter out rules file if it's in the same directory
-            if (
-                rules_file_path
-                and rules_file_path.parent == target_dir
-                and item == rules_file_path
-            ):
-                logger.debug(f"Skipping rules file: {item}")
-                continue
-
             filtered_items.append(item)
 
         logger.debug(f"Collected {len(filtered_items)} items from {target_dir}")
         return filtered_items
 
-    def collect_recursive(
-        self,
-        target_dir: Path,
-        max_depth: int = 1,
-        rules_file_path: Optional[Path] = None,
-    ) -> List[Path]:
+    def collect_recursive(self, target_dir: Path, max_depth: int = 1) -> List[Path]:
         """
         Collect files recursively up to specified depth
 
         Args:
             target_dir: Directory to collect files from
             max_depth: Maximum recursion depth (1 = no recursion)
-            rules_file_path: Rules file to exclude from collection
 
         Returns:
             List of file paths that should be processed
@@ -90,16 +72,14 @@ class FileCollector:
         collected_files = []
 
         # Collect files from current directory
-        current_files = self.collect(target_dir, rules_file_path)
+        current_files = self.collect(target_dir)
         collected_files.extend(current_files)
 
         # Recurse into subdirectories if depth allows
         if max_depth > 1:
             for item in current_files:
                 if item.is_dir():
-                    sub_files = self.collect_recursive(
-                        item, max_depth - 1, rules_file_path
-                    )
+                    sub_files = self.collect_recursive(item, max_depth - 1)
                     collected_files.extend(sub_files)
 
         return collected_files

@@ -76,7 +76,7 @@ class TestInteractiveStrategy(unittest.TestCase):
         self.assertTrue(result1)
 
         # Should cache the response
-        rule_id = id(self.test_rule)
+        rule_id = str(id(self.test_rule))
         self.assertIn(rule_id, self.rule_responses)
         self.assertEqual(self.rule_responses[rule_id], "a")
 
@@ -94,7 +94,7 @@ class TestInteractiveStrategy(unittest.TestCase):
         self.assertFalse(result1)
 
         # Should cache the response
-        rule_id = id(self.test_rule)
+        rule_id = str(id(self.test_rule))
         self.assertIn(rule_id, self.rule_responses)
         self.assertEqual(self.rule_responses[rule_id], "never")
 
@@ -206,9 +206,7 @@ class TestInteractiveStrategy(unittest.TestCase):
             )
 
             # Should print error message
-            mock_print.assert_called_with(
-                "Invalid option. Please choose Y(es), N(o), A(ll), or Never."
-            )
+            mock_print.assert_called_with("Invalid response. Please try again.")
 
             # Final result should be True (y)
             self.assertTrue(result)
@@ -246,8 +244,8 @@ class TestInteractiveStrategy(unittest.TestCase):
         self.assertFalse(result2)
 
         # Both rules should be cached separately
-        rule1_id = id(rule1)
-        rule2_id = id(rule2)
+        rule1_id = str(id(rule1))
+        rule2_id = str(id(rule2))
 
         self.assertEqual(self.rule_responses[rule1_id], "a")
         self.assertEqual(self.rule_responses[rule2_id], "never")
@@ -380,7 +378,7 @@ class TestAutomaticStrategy(unittest.TestCase):
             self.test_file, "delete", self.test_rule, self.rule_responses
         )
 
-        expected_msg = f"Skipping deletion of {self.test_file} (never-delete mode)"
+        expected_msg = f"Skipping action for {self.test_file} (never-execute mode)"
         mock_logger.info.assert_called_once_with(expected_msg)
 
     def test_conflicting_flags_never_takes_precedence(self):
@@ -411,7 +409,7 @@ class TestAutomaticStrategy(unittest.TestCase):
         )
 
         expected_msg = (
-            f"Automatic strategy without delete preference for {self.test_file}"
+            f"Automatic strategy without execution preference for {self.test_file}"
         )
         mock_logger.warning.assert_called_once_with(expected_msg)
 

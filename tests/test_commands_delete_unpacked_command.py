@@ -1,5 +1,7 @@
+import shutil
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -30,8 +32,12 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
         """Clean up temporary directory"""
         self.temp_dir.cleanup()
 
-    @patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator")
-    @patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy")
+    @patch(
+        "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+    )
+    @patch(
+        "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+    )
     def test_init(self, mock_create_strategy, mock_comparator_cls):
         """Test DeleteUnpackedCommand initialization"""
         # Mock comparator instance
@@ -50,10 +56,16 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
         self.assertEqual(command.delete_strategy, mock_strategy)
 
     @patch("unclutter_directory.commands.delete_unpacked_command.setup_logging")
-    @patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy")
-    @patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator")
+    @patch(
+        "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+    )
+    @patch(
+        "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+    )
     @patch("unclutter_directory.commands.delete_unpacked_command.logger")
-    def test_execute_calls_setup_logging_quiet_false(self, mock_logger, mock_comparator_cls, mock_create_strategy, mock_setup_logging):
+    def test_execute_calls_setup_logging_quiet_false(
+        self, mock_logger, mock_comparator_cls, mock_create_strategy, mock_setup_logging
+    ):
         """Test that execute calls setup_logging with correct quiet value"""
         self.mock_config.quiet = False
 
@@ -73,10 +85,16 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
         mock_setup_logging.assert_called_once_with(False)
 
     @patch("unclutter_directory.commands.delete_unpacked_command.setup_logging")
-    @patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy")
-    @patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator")
+    @patch(
+        "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+    )
+    @patch(
+        "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+    )
     @patch("unclutter_directory.commands.delete_unpacked_command.logger")
-    def test_execute_calls_setup_logging_quiet_true(self, mock_logger, mock_comparator_cls, mock_create_strategy, mock_setup_logging):
+    def test_execute_calls_setup_logging_quiet_true(
+        self, mock_logger, mock_comparator_cls, mock_create_strategy, mock_setup_logging
+    ):
         """Test that execute calls setup_logging with correct quiet value when True"""
         self.mock_config.quiet = True
 
@@ -97,9 +115,11 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
 
     def test_execute_no_potential_duplicates(self):
         """Test execute when no potential duplicates are found"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -113,7 +133,9 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             command.execute()
 
             # Verify find_potential_duplicates was called
-            mock_comparator.find_potential_duplicates.assert_called_once_with(self.mock_config.target_dir)
+            mock_comparator.find_potential_duplicates.assert_called_once_with(
+                self.mock_config.target_dir
+            )
             # Verify no comparison or deletion calls
             mock_comparator.compare_archive_and_directory.assert_not_called()
             mock_strategy.should_delete_directory.assert_not_called()
@@ -121,9 +143,11 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
 
     def test_execute_potential_duplicates_not_identical(self):
         """Test execute with potential duplicates that are not identical"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -137,35 +161,46 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             directory_path.name = "test"
 
             # Mock one potential pair
-            mock_comparator.find_potential_duplicates = Mock(return_value=[(archive_path, directory_path)])
+            mock_comparator.find_potential_duplicates = Mock(
+                return_value=[(archive_path, directory_path)]
+            )
 
             # Mock comparison result - not identical
             from unclutter_directory.comparison import ComparisonResult
+
             mock_result = ComparisonResult(
                 archive_path=archive_path,
                 directory_path=directory_path,
                 identical=False,
                 archive_files=[],
                 directory_files=[],
-                differences=["diff1", "diff2", "diff3", "diff4", "diff5", "diff6"]
+                differences=["diff1", "diff2", "diff3", "diff4", "diff5", "diff6"],
             )
             mock_comparator.compare_archive_and_directory.return_value = mock_result
-            mock_comparator.get_comparison_summary.return_value = {'identical': 0, 'identical_percentage': 0.0, 'different': 1}
+            mock_comparator.get_comparison_summary.return_value = {
+                "identical": 0,
+                "identical_percentage": 0.0,
+                "different": 1,
+            }
 
             command = DeleteUnpackedCommand(self.mock_config)
             command.execute()
 
             # Verify comparison was called
-            mock_comparator.compare_archive_and_directory.assert_called_once_with(archive_path, directory_path)
+            mock_comparator.compare_archive_and_directory.assert_called_once_with(
+                archive_path, directory_path
+            )
             # Verify no deletion calls since not identical
             mock_strategy.should_delete_directory.assert_not_called()
             mock_strategy.perform_deletion.assert_not_called()
 
     def test_execute_potential_duplicates_identical_should_delete(self):
         """Test execute with identical duplicates that should be deleted"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -179,20 +214,27 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             directory_path.name = "test"
 
             # Mock one potential pair
-            mock_comparator.find_potential_duplicates = Mock(return_value=[(archive_path, directory_path)])
+            mock_comparator.find_potential_duplicates = Mock(
+                return_value=[(archive_path, directory_path)]
+            )
 
             # Mock comparison result - identical
             from unclutter_directory.comparison import ComparisonResult
+
             mock_result = ComparisonResult(
                 archive_path=archive_path,
                 directory_path=directory_path,
                 identical=True,
                 archive_files=[],
                 directory_files=[],
-                differences=[]
+                differences=[],
             )
             mock_comparator.compare_archive_and_directory.return_value = mock_result
-            mock_comparator.get_comparison_summary.return_value = {'identical': 1, 'identical_percentage': 100.0, 'different': 0}
+            mock_comparator.get_comparison_summary.return_value = {
+                "identical": 1,
+                "identical_percentage": 100.0,
+                "different": 0,
+            }
 
             # Mock strategy responses
             mock_strategy.should_delete_directory.return_value = True
@@ -202,16 +244,24 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             command.execute()
 
             # Verify comparison was called
-            mock_comparator.compare_archive_and_directory.assert_called_once_with(archive_path, directory_path)
+            mock_comparator.compare_archive_and_directory.assert_called_once_with(
+                archive_path, directory_path
+            )
             # Verify deletion decisions
-            mock_strategy.should_delete_directory.assert_called_once_with(directory_path, archive_path)
-            mock_strategy.perform_deletion.assert_called_once_with(directory_path, archive_path, False)
+            mock_strategy.should_delete_directory.assert_called_once_with(
+                directory_path, archive_path
+            )
+            mock_strategy.perform_deletion.assert_called_once_with(
+                directory_path, archive_path, False
+            )
 
     def test_execute_potential_duplicates_identical_should_not_delete(self):
         """Test execute with identical duplicates that should not be deleted"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -225,20 +275,27 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             directory_path.name = "test"
 
             # Mock one potential pair
-            mock_comparator.find_potential_duplicates = Mock(return_value=[(archive_path, directory_path)])
+            mock_comparator.find_potential_duplicates = Mock(
+                return_value=[(archive_path, directory_path)]
+            )
 
             # Mock comparison result - identical
             from unclutter_directory.comparison import ComparisonResult
+
             mock_result = ComparisonResult(
                 archive_path=archive_path,
                 directory_path=directory_path,
                 identical=True,
                 archive_files=[],
                 directory_files=[],
-                differences=[]
+                differences=[],
             )
             mock_comparator.compare_archive_and_directory.return_value = mock_result
-            mock_comparator.get_comparison_summary.return_value = {'identical': 1, 'identical_percentage': 100.0, 'different': 0}
+            mock_comparator.get_comparison_summary.return_value = {
+                "identical": 1,
+                "identical_percentage": 100.0,
+                "different": 0,
+            }
 
             # Mock strategy responses
             mock_strategy.should_delete_directory.return_value = False
@@ -247,17 +304,24 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             command.execute()
 
             # Verify comparison was called
-            mock_comparator.compare_archive_and_directory.assert_called_once_with(archive_path, directory_path)
+            mock_comparator.compare_archive_and_directory.assert_called_once_with(
+                archive_path, directory_path
+            )
             # Verify should_delete_directory was called but not perform_deletion
-            mock_strategy.should_delete_directory.assert_called_once_with(directory_path, archive_path)
+            mock_strategy.should_delete_directory.assert_called_once_with(
+                directory_path, archive_path
+            )
             mock_strategy.perform_deletion.assert_not_called()
 
     def test_execute_comparison_exception_handling(self):
         """Test execute handles exceptions during comparison gracefully"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy, \
-             patch("unclutter_directory.commands.delete_unpacked_command.logger") as mock_logger:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy, patch(
+            "unclutter_directory.commands.delete_unpacked_command.logger"
+        ) as mock_logger:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -271,17 +335,27 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             directory_path.name = "test"
 
             # Mock one potential pair (but won't be used due to exception)
-            mock_comparator.find_potential_duplicates = Mock(return_value=[(archive_path, directory_path)])
+            mock_comparator.find_potential_duplicates = Mock(
+                return_value=[(archive_path, directory_path)]
+            )
 
             # Mock comparison to raise exception
-            mock_comparator.compare_archive_and_directory.side_effect = Exception("Test error")
-            mock_comparator.get_comparison_summary.return_value = {'identical': 0, 'identical_percentage': 0.0, 'different': 0}
+            mock_comparator.compare_archive_and_directory.side_effect = Exception(
+                "Test error"
+            )
+            mock_comparator.get_comparison_summary.return_value = {
+                "identical": 0,
+                "identical_percentage": 0.0,
+                "different": 0,
+            }
 
             command = DeleteUnpackedCommand(self.mock_config)
             command.execute()
 
             # Verify comparison was attempted
-            mock_comparator.compare_archive_and_directory.assert_called_once_with(archive_path, directory_path)
+            mock_comparator.compare_archive_and_directory.assert_called_once_with(
+                archive_path, directory_path
+            )
             # Verify error was logged
             mock_logger.error.assert_called_once()
             # Verify execution continued despite error
@@ -289,10 +363,13 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
 
     def test_execute_keyboard_interrupt_handling(self):
         """Test execute handles KeyboardInterrupt gracefully"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy, \
-             patch("unclutter_directory.commands.delete_unpacked_command.logger") as mock_logger:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy, patch(
+            "unclutter_directory.commands.delete_unpacked_command.logger"
+        ) as mock_logger:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -312,10 +389,13 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
 
     def test_execute_unexpected_exception_handling(self):
         """Test execute handles unexpected exceptions by re-raising"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy, \
-             patch("unclutter_directory.commands.delete_unpacked_command.logger") as mock_logger:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy, patch(
+            "unclutter_directory.commands.delete_unpacked_command.logger"
+        ) as mock_logger:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -329,19 +409,24 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             directory_path.name = "test"
 
             from unclutter_directory.comparison import ComparisonResult
+
             mock_result = ComparisonResult(
                 archive_path=archive_path,
                 directory_path=directory_path,
                 identical=False,
                 archive_files=[],
                 directory_files=[],
-                differences=["diff1"]
+                differences=["diff1"],
             )
 
-            mock_comparator.find_potential_duplicates = Mock(return_value=[(archive_path, directory_path)])
+            mock_comparator.find_potential_duplicates = Mock(
+                return_value=[(archive_path, directory_path)]
+            )
             mock_comparator.compare_archive_and_directory.return_value = mock_result
             # Make get_comparison_summary raise the exception
-            mock_comparator.get_comparison_summary.side_effect = Exception("Unexpected error")
+            mock_comparator.get_comparison_summary.side_effect = Exception(
+                "Unexpected error"
+            )
 
             command = DeleteUnpackedCommand(self.mock_config)
 
@@ -350,13 +435,17 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
 
             self.assertEqual(str(context.exception), "Unexpected error")
             # Verify error was logged
-            mock_logger.error.assert_called_once_with("❌ Unexpected error during check-duplicates operation: Unexpected error")
+            mock_logger.error.assert_called_once_with(
+                "❌ Unexpected error during check-duplicates operation: Unexpected error"
+            )
 
     def test_execute_calls_print_summary(self):
         """Test execute calls _print_summary with correct parameters"""
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator") as mock_comparator_cls, \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy") as mock_create_strategy:
-
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ) as mock_comparator_cls, patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ) as mock_create_strategy:
             # Mock dependencies
             mock_comparator = Mock()
             mock_comparator_cls.return_value = mock_comparator
@@ -370,18 +459,27 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
             directory_path.name = "test"
 
             from unclutter_directory.comparison import ComparisonResult
+
             mock_result = ComparisonResult(
                 archive_path=archive_path,
                 directory_path=directory_path,
                 identical=False,
                 archive_files=[],
                 directory_files=[],
-                differences=["diff1"]
+                differences=["diff1"],
             )
 
-            mock_comparator.find_potential_duplicates = Mock(return_value=[(archive_path, directory_path)])
+            mock_comparator.find_potential_duplicates = Mock(
+                return_value=[(archive_path, directory_path)]
+            )
             mock_comparator.compare_archive_and_directory.return_value = mock_result
-            mock_comparator.get_comparison_summary = Mock(return_value={'identical': 0, 'identical_percentage': 0.0, 'different': 1})
+            mock_comparator.get_comparison_summary = Mock(
+                return_value={
+                    "identical": 0,
+                    "identical_percentage": 0.0,
+                    "different": 1,
+                }
+            )
 
             command = DeleteUnpackedCommand(self.mock_config)
             command.execute()
@@ -394,8 +492,11 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
         from unclutter_directory.comparison import ComparisonResult
 
         # Create command instance
-        with patch("unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"), \
-             patch("unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"):
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.ArchiveDirectoryComparator"
+        ), patch(
+            "unclutter_directory.commands.delete_unpacked_command.create_delete_strategy"
+        ):
             command = DeleteUnpackedCommand(self.mock_config)
 
         # Create mock results
@@ -405,18 +506,409 @@ class TestDeleteUnpackedCommand(unittest.TestCase):
 
         # Mock comparator summary
         command.comparator.get_comparison_summary.return_value = {
-            'identical': 1,
-            'identical_percentage': 50.0,
-            'different': 1
+            "identical": 1,
+            "identical_percentage": 50.0,
+            "different": 1,
         }
 
-        with patch("unclutter_directory.commands.delete_unpacked_command.logger") as mock_logger:
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.logger"
+        ) as mock_logger:
             command._print_summary(results, 1, 2)
 
         # Verify summary logging calls
         mock_logger.info.assert_any_call("\n📊 Summary:")
         mock_logger.info.assert_any_call("   • Total pairs checked: 2")
         mock_logger.info.assert_any_call("   • Identical structures: 1 (50.0%)")
+
+    # Integration tests using real files and directories
+    def test_execute_no_duplicates_integration(self):
+        """Test execute with archive and non-matching directory - integration test"""
+        # Create archive
+        archive_path = self.test_path / "test.zip"
+        with open(archive_path, "wb") as f:
+            # Create a simple ZIP file
+            with zipfile.ZipFile(f, "w") as zf:
+                zf.writestr("file1.txt", "content1")
+                zf.writestr("file2.txt", "content2")
+
+        # Create non-matching directory
+        dir_path = self.test_path / "different_structure"
+        dir_path.mkdir()
+        (dir_path / "file_a.txt").write_text("different_content_a")
+        (dir_path / "file_b.txt").write_text("different_content_b")
+        (dir_path / "extra_file.txt").write_text("extra")  # Additional file
+
+        # Create config
+        config = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            dry_run=True,  # Safe mode
+            always_delete=False,
+            never_delete=False,
+            include_hidden=False,
+            quiet=True,
+        )
+
+        command = DeleteUnpackedCommand(config)
+        command.execute()
+
+        # Verify directory still exists (no deletion occurred)
+        self.assertTrue(dir_path.exists())
+
+        # Clean up
+        archive_path.unlink()
+        import shutil
+
+        shutil.rmtree(dir_path)
+
+    def test_execute_identical_pair_dry_run_integration(self):
+        """Test execute with identical archive and directory pair using --dry-run"""
+        # Create content for our test files
+        content1 = "This is file 1 content"
+        content2 = "This is file 2 content"
+
+        # Use unique names for this test
+        test_name = "dry_run"
+        content_dir_name = f"source_{test_name}"
+        dir_name = f"source_{test_name}"
+
+        # Create temporary directory for test content
+        test_content_dir = self.test_path / content_dir_name
+        test_content_dir.mkdir(exist_ok=True)
+
+        # Create files in the source directory
+        file1_path = test_content_dir / "file1.txt"
+        file2_path = test_content_dir / "file2.txt"
+        file1_path.write_text(content1)
+        file2_path.write_text(content2)
+
+        # Create ZIP archive from the source directory
+        archive_path = self.test_path / f"{dir_name}.zip"
+        with zipfile.ZipFile(archive_path, "w") as zf:
+            zf.write(file1_path, file1_path.name)
+            zf.write(file2_path, file2_path.name)
+
+        # Create the unpacked directory (named after archive without extension)
+        unpacked_dir = self.test_path / dir_name
+        if not unpacked_dir.exists():
+            unpacked_dir.mkdir()
+        (unpacked_dir / "file1.txt").write_text(content1)
+        (unpacked_dir / "file2.txt").write_text(content2)
+
+        # Create config with dry run mode
+        config = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            never_delete=True,  # Dry run mode - should NOT delete anything
+            always_delete=False,
+            include_hidden=False,
+            quiet=True,
+        )
+
+        command = DeleteUnpackedCommand(config)
+        command.execute()
+
+        # Verify directory still exists (dry run should not delete)
+        self.assertTrue(unpacked_dir.exists())
+
+        # Clean up
+        archive_path.unlink()
+        shutil.rmtree(test_content_dir)
+        if unpacked_dir.exists():
+            shutil.rmtree(unpacked_dir)
+
+    def test_execute_identical_pair_always_delete_integration(self):
+        """Test execute with identical archive and directory pair using --always-delete"""
+        import uuid
+
+        # Create content for our test files
+        content1 = "This is file 1 content"
+        content2 = "This is file 2 content"
+
+        # Use UUID to ensure complete uniqueness
+        unique_id = str(uuid.uuid4())[:8]
+        content_dir_name = f"source_always_{unique_id}"
+        dir_name = f"source_always_{unique_id}"
+
+        # Create temporary directory for test content
+        test_content_dir = self.test_path / content_dir_name
+        if test_content_dir.exists():
+            shutil.rmtree(test_content_dir)
+        test_content_dir.mkdir(parents=True)
+
+        # Create files in the source directory
+        file1_path = test_content_dir / "file1.txt"
+        file2_path = test_content_dir / "file2.txt"
+        file1_path.write_text(content1)
+        file2_path.write_text(content2)
+
+        # Create ZIP archive from the source directory
+        archive_path = self.test_path / f"{dir_name}.zip"
+        if archive_path.exists():
+            archive_path.unlink()
+        with zipfile.ZipFile(archive_path, "w") as zf:
+            zf.write(file1_path, file1_path.name)
+            zf.write(file2_path, file2_path.name)
+
+        # Create the unpacked directory (named after archive without extension)
+        unpacked_dir = self.test_path / dir_name
+        if unpacked_dir.exists():
+            shutil.rmtree(unpacked_dir)
+        unpacked_dir.mkdir(parents=True)
+        (unpacked_dir / "file1.txt").write_text(content1)
+        (unpacked_dir / "file2.txt").write_text(content2)
+
+        # Create config with always-delete mode
+        config = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            dry_run=False,
+            always_delete=True,  # Should delete automatically
+            never_delete=False,
+            include_hidden=False,
+            quiet=True,
+        )
+
+        command = DeleteUnpackedCommand(config)
+        command.execute()
+
+        # Verify directory was actually deleted
+        self.assertFalse(unpacked_dir.exists())
+
+        # Clean up archive and content directory
+        if archive_path.exists():
+            archive_path.unlink()
+        if test_content_dir.exists():
+            shutil.rmtree(test_content_dir)
+
+    @patch("builtins.input")
+    def test_execute_identical_pair_interactive_yes_integration(self, mock_input):
+        """Test execute with identical pair in interactive mode, user confirms yes"""
+        mock_input.return_value = "y"
+
+        # Create content for our test files
+        content1 = "This is file 1 content"
+        content2 = "This is file 2 content"
+
+        # Use unique names for this test
+        test_name = "interactive_yes"
+        content_dir_name = f"source_{test_name}"
+        dir_name = f"source_{test_name}"
+
+        # Create temporary directory for test content
+        test_content_dir = self.test_path / content_dir_name
+        test_content_dir.mkdir(exist_ok=True)
+
+        # Create files in the source directory
+        file1_path = test_content_dir / "file1.txt"
+        file2_path = test_content_dir / "file2.txt"
+        file1_path.write_text(content1)
+        file2_path.write_text(content2)
+
+        # Create ZIP archive from the source directory
+        archive_path = self.test_path / f"{dir_name}.zip"
+        with zipfile.ZipFile(archive_path, "w") as zf:
+            zf.write(file1_path, file1_path.name)
+            zf.write(file2_path, file2_path.name)
+
+        # Create the unpacked directory
+        unpacked_dir = self.test_path / dir_name
+        unpacked_dir.mkdir(exist_ok=True)
+        (unpacked_dir / "file1.txt").write_text(content1)
+        (unpacked_dir / "file2.txt").write_text(content2)
+
+        # Create config with interactive mode
+        config = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            dry_run=False,
+            always_delete=False,  # Interactive mode
+            never_delete=False,
+            include_hidden=False,
+            quiet=True,
+        )
+
+        command = DeleteUnpackedCommand(config)
+        command.execute()
+
+        # Verify directory was deleted after user confirmation
+        self.assertFalse(unpacked_dir.exists())
+
+        # Clean up archive
+        archive_path.unlink()
+        if test_content_dir.exists():
+            shutil.rmtree(test_content_dir)
+
+    @patch("builtins.input")
+    def test_execute_identical_pair_interactive_no_integration(self, mock_input):
+        """Test execute with identical pair in interactive mode, user confirms no"""
+        mock_input.return_value = "n"
+
+        # Create content for our test files
+        content1 = "This is file 1 content"
+        content2 = "This is file 2 content"
+
+        # Use unique names for this test
+        test_name = "interactive_no"
+        content_dir_name = f"source_{test_name}"
+        dir_name = f"source_{test_name}"
+
+        # Create temporary directory for test content
+        test_content_dir = self.test_path / content_dir_name
+        test_content_dir.mkdir(exist_ok=True)
+
+        # Create files in the source directory
+        file1_path = test_content_dir / "file1.txt"
+        file2_path = test_content_dir / "file2.txt"
+        file1_path.write_text(content1)
+        file2_path.write_text(content2)
+
+        # Create ZIP archive from the source directory
+        archive_path = self.test_path / f"{dir_name}.zip"
+        with zipfile.ZipFile(archive_path, "w") as zf:
+            zf.write(file1_path, file1_path.name)
+            zf.write(file2_path, file2_path.name)
+
+        # Create the unpacked directory
+        unpacked_dir = self.test_path / dir_name
+        unpacked_dir.mkdir(exist_ok=True)
+        (unpacked_dir / "file1.txt").write_text(content1)
+        (unpacked_dir / "file2.txt").write_text(content2)
+
+        # Create config with interactive mode
+        config = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            dry_run=False,
+            always_delete=False,  # Interactive mode
+            never_delete=False,
+            include_hidden=False,
+            quiet=True,
+        )
+
+        command = DeleteUnpackedCommand(config)
+        command.execute()
+
+        # Verify directory still exists (not deleted after user said no)
+        self.assertTrue(unpacked_dir.exists())
+
+        # Clean up
+        archive_path.unlink()
+        shutil.rmtree(test_content_dir)
+        if unpacked_dir.exists():
+            shutil.rmtree(unpacked_dir)
+
+    def test_execute_different_structures_integration(self):
+        """Test execute with archive and directory having different contents"""
+        # Create archive with certain content
+        archive_path = self.test_path / "test.zip"
+        with zipfile.ZipFile(archive_path, "w") as zf:
+            zf.writestr("file1.txt", "archive_content_1")
+            zf.writestr("file2.txt", "archive_content_2")
+            zf.writestr("only_in_archive.txt", "archive_only")
+
+        # Create different directory
+        unpacked_dir = self.test_path / "test"
+        unpacked_dir.mkdir()
+        (unpacked_dir / "file1.txt").write_text("dir_content_1")  # Different content
+        (unpacked_dir / "file2.txt").write_text("archive_content_2")  # Same
+        (unpacked_dir / "only_in_dir.txt").write_text("dir_only")  # Extra file
+
+        # Create config
+        config = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            dry_run=True,  # Safe mode
+            always_delete=False,
+            never_delete=False,
+            include_hidden=False,
+            quiet=True,
+        )
+
+        command = DeleteUnpackedCommand(config)
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.logger"
+        ) as mock_logger:
+            command.execute()
+
+        # Verify directory still exists (should not delete due to differences)
+        self.assertTrue(unpacked_dir.exists())
+
+        # Verify difference messages were logged
+        difference_calls = [
+            call
+            for call in mock_logger.info.call_args_list
+            if "different" in str(call).lower() or "diff" in str(call).lower()
+        ]
+        self.assertTrue(len(difference_calls) > 0)
+
+        # Clean up
+        archive_path.unlink()
+        shutil.rmtree(unpacked_dir)
+
+    def test_execute_include_hidden_flag_integration(self):
+        """Test --include-hidden flag affects comparison results"""
+        # Create archive without hidden files
+        archive_path = self.test_path / "test_hidden.zip"
+        with zipfile.ZipFile(archive_path, "w") as zf:
+            zf.writestr("file1.txt", "content1")
+            zf.writestr("file2.txt", "content2")
+
+        # Create directory with a hidden file (difference)
+        unpacked_dir = self.test_path / "test_hidden"
+        unpacked_dir.mkdir()
+        (unpacked_dir / "file1.txt").write_text("content1")
+        (unpacked_dir / "file2.txt").write_text("content2")
+        (unpacked_dir / ".hidden_file").write_text("hidden_content")
+
+        # Test WITHOUT --include-hidden (hidden files ignored)
+        config_without_hidden = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            dry_run=True,
+            always_delete=False,
+            never_delete=False,
+            include_hidden=False,  # Should ignore hidden files
+            quiet=True,
+        )
+
+        command_without = DeleteUnpackedCommand(config_without_hidden)
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.logger"
+        ) as mock_logger:
+            command_without.execute()
+
+        # Should report as identical (ignoring hidden file)
+
+        # Clean up for next test
+        if unpacked_dir.exists():
+            shutil.rmtree(unpacked_dir)
+        unpacked_dir.mkdir()
+        (unpacked_dir / "file1.txt").write_text("content1")
+        (unpacked_dir / "file2.txt").write_text("content2")
+        (unpacked_dir / ".hidden_file").write_text("hidden_content")
+
+        # Test WITH --include-hidden (hidden files included)
+        config_with_hidden = DeleteUnpackedConfig(
+            target_dir=self.test_path,
+            dry_run=True,
+            always_delete=False,
+            never_delete=False,
+            include_hidden=True,  # Should include hidden files
+            quiet=True,
+        )
+
+        command_with = DeleteUnpackedCommand(config_with_hidden)
+        with patch(
+            "unclutter_directory.commands.delete_unpacked_command.logger"
+        ) as mock_logger:
+            command_with.execute()
+
+        # Should report differences due to hidden file
+        difference_calls = [
+            call
+            for call in mock_logger.info.call_args_list
+            if "different" in str(call).lower() or "diff" in str(call).lower()
+        ]
+        self.assertTrue(len(difference_calls) > 0)
+
+        # Clean up
+        archive_path.unlink()
+        shutil.rmtree(unpacked_dir)
 
 
 class TestDeleteUnpackedCommandConfig(unittest.TestCase):
@@ -433,10 +925,7 @@ class TestDeleteUnpackedCommandConfig(unittest.TestCase):
 
     def test_config_with_quiet_flag(self):
         """Test that DeleteUnpackedConfig handles quiet flag correctly"""
-        config = DeleteUnpackedConfig(
-            target_dir=self.test_path,
-            quiet=True
-        )
+        config = DeleteUnpackedConfig(target_dir=self.test_path, quiet=True)
 
         self.assertTrue(config.quiet)
 

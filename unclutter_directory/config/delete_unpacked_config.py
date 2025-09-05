@@ -2,6 +2,7 @@
 Configuration class for the check-duplicates command.
 """
 
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..commons import get_logger
@@ -9,49 +10,25 @@ from ..commons import get_logger
 logger = get_logger()
 
 
+@dataclass
 class DeleteUnpackedConfig:
     """Configuration for the delete-unpacked operation."""
 
-    def __init__(
-        self,
-        target_dir: Path,
-        dry_run: bool = True,  # Default to True for safety
-        always_delete: bool = False,
-        never_delete: bool = False,
-        include_hidden: bool = False,
-        quiet: bool = False,
-    ):
-        """
-        Initialize check duplicates configuration
+    target_dir: Path
+    dry_run: bool = True  # Default to True for safety
+    always_delete: bool = False
+    never_delete: bool = False
+    include_hidden: bool = False
+    quiet: bool = False
+    _target_dir_path: Path | None = field(init=False, default=None)
 
-        Args:
-            target_dir: Directory to scan for archive-directory duplicates
-            dry_run: If True, only show what would be deleted without actually deleting
-            always_delete: If True, delete duplicate directories without confirmation
-            never_delete: If True, never delete directories (only report)
-            include_hidden: Whether to include hidden files and directories
-            quiet: If True, suppress non-error messages
-        """
-        self.target_dir = target_dir
-        self.dry_run = dry_run
-        self.always_delete = always_delete
-        self.never_delete = never_delete
-        self.include_hidden = include_hidden
-        self.quiet = quiet
-
-        # Computed properties
-        self._target_dir_path = None
-
-        # Validate configuration
-        self._validate_config()
-
-    def _validate_config(self):
-        """Validate configuration parameters"""
+    def __post_init__(self):
+        """Validate configuration after initialization"""
         errors = []
 
         # Validate target directory
         if not self.target_dir.exists():
-            errors.append(f"TTarget directory does not exist: {self.target_dir}")
+            errors.append(f"Target directory does not exist: {self.target_dir}")
 
         if not self.target_dir.is_dir():
             errors.append(f"Target path is not a directory: {self.target_dir}")

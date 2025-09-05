@@ -27,9 +27,8 @@ class DeleteUnpackedCommand:
             include_hidden=config.include_hidden
         )
         self.delete_strategy = create_delete_strategy(
-            dry_run=False,
             always_delete=config.always_delete,
-            never_delete=config.never_delete,
+            never_delete=config.never_delete or config.dry_run,
             interactive=config.should_interactive_prompt(),
         )
 
@@ -126,4 +125,3 @@ class DeleteUnpackedCommand:
         )
         logger.info(f"   • Different structures: {summary['different']}")
         logger.info(f"   • Directories deleted: {deleted_count}")
-

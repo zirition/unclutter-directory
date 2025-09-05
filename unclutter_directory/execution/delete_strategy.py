@@ -5,10 +5,134 @@ Provides both interactive and non-interactive deletion of duplicate directories.
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Optional, Set
 
 from ..commons import get_logger
 
 logger = get_logger()
+
+
+class ConfirmationStrategy(ABC):
+    """Base class for configurable confirmation strategies"""
+
+    @abstractmethod
+    def get_confirmation(
+        self, context_info: str, cache_key: Optional[str] = None
+    ) -> bool:
+        """
+        Get user confirmation for an action.
+
+        Args:
+            context_info: Information about the action for the prompt
+            cache_key: Optional key for caching responses
+
+        Returns:
+            True if action should proceed, False otherwise
+        """
+        pass
+
+
+class AutomaticConfirmationStrategy(ConfirmationStrategy):
+    """Strategy for automatic confirmation without user interaction"""
+
+    def __init__(self, always_execute: bool = False, never_execute: bool = False):
+        self.always_execute = always_execute
+        self.never_execute = never_execute
+
+    def get_confirmation(
+        self, context_info: str, cache_key: Optional[str] = None
+    ) -> bool:
+        """Determine confirmation based on flags"""
+        if self.never_execute:
+            logger.info(f"Skipping action for {context_info} (never-execute mode)")
+            return False
+        elif self.always_execute:
+            return True
+        else:
+            logger.warning(
+                f"Automatic strategy without execution preference for {context_info}"
+            )
+            return False
+
+
+class InteractiveConfirmationStrategy(ConfirmationStrategy):
+    """Strategy for interactive confirmation with user prompts"""
+
+    def __init__(
+        self,
+        prompt_template: str,
+        valid_responses: Set[str],
+        default_response: str = "n",
+        caching_enabled: bool = False,
+        responses_dict: Optional[dict] = None,
+    ):
+        """
+        Initialize interactive confirmation strategy.
+
+        Args:
+            prompt_template: Template string for the prompt (e.g., "Delete {context}? [Y/N]: ")
+            valid_responses: Set of valid response strings
+            default_response: Default response for empty input
+            caching_enabled: Whether to cache responses
+            responses_dict: Dictionary to store cached responses
+        """
+        self.prompt_template = prompt_template
+        self.valid_responses = valid_responses
+        self.default_response = default_response
+        self.caching_enabled = caching_enabled
+        self.responses_dict = responses_dict or {}
+
+    def get_confirmation(
+        self, context_info: str, cache_key: Optional[str] = None
+    ) -> bool:
+        """Get confirmation from user, with optional caching"""
+        if self.caching_enabled and cache_key and cache_key in self.responses_dict:
+            cached = self.responses_dict[cache_key]
+            if cached == "a":  # Apply to all
+                return True
+            elif cached == "never":
+                return False
+            # If other response cached, fall through to ask again
+
+        # Get response from user
+        response = self._prompt_user(context_info)
+
+        # Handle special responses that should be cached
+        if response == "a":  # Apply to all
+            if self.caching_enabled and cache_key:
+                self.responses_dict[cache_key] = "a"
+            return True
+        elif response == "never":
+            if self.caching_enabled and cache_key:
+                self.responses_dict[cache_key] = "never"
+            return False
+        else:
+            # Don't cache individual Y/N responses - ask each time
+            return response == "y"
+
+    def _prompt_user(self, context_info: str) -> str:
+        """Prompt user and return normalized response"""
+        prompt = self.prompt_template.format(context=context_info)
+        while True:
+            try:
+                response = input(prompt).strip().lower() or self.default_response
+                if response in self.valid_responses:
+                    return response
+                print("Invalid response. Please try again.")
+            except (EOFError, KeyboardInterrupt):
+                print("\nOperation cancelled by user.")
+                raise KeyboardInterrupt from None
+
+
+class DryRunConfirmationStrategy(ConfirmationStrategy):
+    """Strategy for dry run mode - always returns False"""
+
+    def get_confirmation(
+        self, context_info: str, cache_key: Optional[str] = None
+    ) -> bool:
+        """Always return False in dry run mode"""
+        logger.info(f"[DRY RUN] Would confirm action for {context_info}")
+        return False
 
 
 class DeleteConfirmationStrategy(ABC):
@@ -62,7 +186,12 @@ class InteractiveDeleteStrategy(DeleteConfirmationStrategy):
 
     def __init__(self):
         """Initialize interactive delete strategy."""
-        pass
+        self.confirmation_strategy = InteractiveConfirmationStrategy(
+            prompt_template="Delete duplicate directory '{context}'? [Y(es)/N(o)]: ",
+            valid_responses={"y", "n"},
+            default_response="n",
+            caching_enabled=False,
+        )
 
     def should_delete_directory(self, directory_path: Path, archive_path: Path) -> bool:
         """
@@ -75,35 +204,8 @@ class InteractiveDeleteStrategy(DeleteConfirmationStrategy):
         Returns:
             True if user confirms deletion, False otherwise
         """
-        return self._prompt_user_for_deletion(directory_path, archive_path)
-
-    def _prompt_user_for_deletion(
-        self, directory_path: Path, archive_path: Path
-    ) -> str:
-        """
-        Prompt user for directory deletion confirmation.
-
-        Args:
-            directory_path: Path to directory that would be deleted
-            archive_path: Path to corresponding archive file
-
-        Returns:
-            'y' for yes/accept, 'n' for no/skip
-        """
-        valid_responses = {"y", "n"}
-        archive_name = archive_path.name
-
-        prompt = f"Delete duplicate directory '{directory_path.name}' (identical to '{archive_name}')? [Y(es)/N(o)]: "
-
-        while True:
-            try:
-                response = input(prompt).strip().lower() or "n"  # Default to no
-                if response in valid_responses:
-                    return response == "y"
-                print("Invalid option. Please choose Y(es) or N(o).")
-            except (EOFError, KeyboardInterrupt):
-                print("\nOperation cancelled by user.")
-                raise KeyboardInterrupt from None
+        context_info = f"'{directory_path.name}' (identical to '{archive_path.name}')"
+        return self.confirmation_strategy.get_confirmation(context_info)
 
 
 class AutomaticDeleteStrategy(DeleteConfirmationStrategy):
@@ -116,7 +218,10 @@ class AutomaticDeleteStrategy(DeleteConfirmationStrategy):
         Args:
             always_delete: If True, always delete duplicate directories
         """
-        self.always_delete = always_delete
+        self.confirmation_strategy = AutomaticConfirmationStrategy(
+            always_execute=always_delete,
+            never_execute=not always_delete,  # Default to never if not always
+        )
 
     def should_delete_directory(self, directory_path: Path, archive_path: Path) -> bool:
         """
@@ -129,15 +234,16 @@ class AutomaticDeleteStrategy(DeleteConfirmationStrategy):
         Returns:
             True if directory should be deleted, False otherwise
         """
-        if self.always_delete:
-            return True
-
-        # Default behavior: never delete (report only)
-        return False
+        context_info = f"delete directory {directory_path.name}"
+        return self.confirmation_strategy.get_confirmation(context_info)
 
 
 class DryRunDeleteStrategy(DeleteConfirmationStrategy):
     """Strategy for dry run mode - logs actions but doesn't actually delete."""
+
+    def __init__(self):
+        """Initialize dry run delete strategy."""
+        self.dry_run_confirmation = DryRunConfirmationStrategy()
 
     def should_delete_directory(self, directory_path: Path, archive_path: Path) -> bool:
         """Always returns False in dry run mode."""

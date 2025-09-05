@@ -36,16 +36,16 @@ class TestFileCollector(unittest.TestCase):
         self.assertIn(file1, collected)
         self.assertIn(file2, collected)
 
-    def test_collect_exclude_rules_file(self):
+    def test_collect_includes_all_files(self):
         file1 = self.test_path / "file1.txt"
         file1.write_text("content1")
         rules_file = self.test_path / "rules.yaml"
         rules_file.write_text("rules content")
 
         collector = FileCollector()
-        collected = collector.collect(self.test_path, rules_file_path=rules_file)
+        collected = collector.collect(self.test_path)
         self.assertIn(file1, collected)
-        self.assertNotIn(rules_file, collected)
+        self.assertIn(rules_file, collected)
 
     def test_collect_permission_error(self):
         collector = FileCollector()
@@ -163,12 +163,11 @@ class TestFileCollector(unittest.TestCase):
         for name in filenames:
             self.assertIn(self.test_path / name, collected)
 
-    def test_collect_with_nonexistent_rules_file(self):
+    def test_collect_with_nonexistent_file_reference(self):
         file1 = self.test_path / "file1.txt"
         file1.write_text("content1")
-        rules_file = self.test_path / "nonexistent_rules.yaml"
         collector = FileCollector()
-        collected = collector.collect(self.test_path, rules_file_path=rules_file)
+        collected = collector.collect(self.test_path)
         self.assertIn(file1, collected)
 
     def test_collect_with_file_path_instead_of_directory(self):

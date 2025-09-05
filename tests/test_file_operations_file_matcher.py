@@ -1,4 +1,5 @@
 import unittest
+from datetime import timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -9,16 +10,25 @@ from unclutter_directory.file_operations.file_matcher import FileMatcher
 
 class TestFileMatcher(unittest.TestCase):
     def setUp(self):
-        # Define some sample files for testing
+        # Define some sample files for testing with computed dates using timedelta
         self.file1 = File(
-            path=Path("/some/path"), name="example1.txt", date=100000, size=1000
+            path=Path("/some/path"),
+            name="example1.txt",
+            date=timedelta(hours=1.5).total_seconds(),
+            size=1000,
         )
         self.file2 = File(
-            path=Path("/some/path"), name="example2.zip", date=200000, size=2000
+            path=Path("/some/path"),
+            name="example2.zip",
+            date=timedelta(hours=1).total_seconds(),
+            size=2000,
         )
 
         self.file_in_zip = File(
-            path=Path("/archive/path"), name="inside.txt", date=150000, size=500
+            path=Path("/archive/path"),
+            name="inside.txt",
+            date=timedelta(seconds=0).total_seconds(),
+            size=500,
         )
 
         self.rule_name_start = {"conditions": {"start": "example"}}
@@ -27,8 +37,8 @@ class TestFileMatcher(unittest.TestCase):
         self.rule_name_regex = {"conditions": {"regex": "^exampl.*"}}
         self.rule_size_larger = {"conditions": {"larger": "500B"}}
         self.rule_size_smaller = {"conditions": {"smaller": "150001B"}}
-        self.rule_age_older = {"conditions": {"older": "1d"}}
-        self.rule_age_newer = {"conditions": {"newer": "3d"}}
+        self.rule_age_older = {"conditions": {"older": "1h"}}
+        self.rule_age_newer = {"conditions": {"newer": "2h"}}
 
     def tearDown(self):
         pass

@@ -68,9 +68,10 @@ class OrganizeCommand:
             strategy = self.factory.create_execution_strategy(self.config)
 
             # Collect files to process
-            files = collector.collect(
-                self.config.target_dir, self.config.rules_file_path
-            )
+            files = collector.collect(self.config.target_dir)
+
+            # Filter out rules file from collected files
+            files = [f for f in files if f != self.config.rules_file_path]
 
             if not files:
                 logger.info("No files found to process")

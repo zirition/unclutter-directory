@@ -48,9 +48,39 @@ class TestCommons(unittest.TestCase):
                 "conditions": {"larger": "1KB", "newer": "1d"},
                 "action": {"type": "move", "target": "/path/to/target"},
                 "check_archive": True,
-            }
+            },
+            {  # Additional valid from test_is_valid_rule_conditions
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "move", "target": "/path/to/target"},
+            },
+            {"conditions": {"contain": "keyword"}, "action": {"type": "delete"}},
+            {
+                "conditions": {"regex": "[a-z]+"},
+                "action": {"type": "compress", "target": "."},
+            },
+            {  # Additional valid from test_is_valid_rule_action
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+            },
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "compress", "target": "."},
+            },
+            {  # Additional valid from test_is_valid_rule_check_archive
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "check_archive": False,
+            },
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "check_archive": True,
+            },
         ]
-        self.assertEqual(validate_rules_file(valid_rules), [])
+        for i, rule in enumerate(valid_rules):
+            self.assertEqual(
+                validate_rules_file([rule]), [], f"Valid rule #{i + 1} should pass"
+            )
 
         # Test invalid rules format
         self.assertTrue(len(validate_rules_file("not a list")) > 0)
@@ -64,105 +94,36 @@ class TestCommons(unittest.TestCase):
             {"conditions": {"newer": "invalid"}},
             {"conditions": {"regex": "["}},
             {"action": "not a dict"},
-            {"action": {"type": "invalid"}},
-            {"action": {"type": "move"}},
+            {"conditions": {"larger": "10MB"}, "action": {"type": "invalid"}},
+            {"conditions": {"larger": "10MB"}, "action": {"type": "move"}},
             {"check_archive": "not a bool"},
-        ]
-        for rule in invalid_rules:
-            self.assertTrue(len(validate_rules_file([rule])) > 0)
-
-    def test_is_valid_rule_conditions(self):
-        valid_rules = [
-            {
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "move", "target": "/path/to/target"},
-            },
-            {"conditions": {"contain": "keyword"}, "action": {"type": "delete"}},
-            {
-                "conditions": {"regex": "[a-z]+"},
-                "action": {"type": "compress", "target": "."},
-            },
-        ]
-
-        invalid_rules = [
-            # Invalid condition type
+            # Additional invalid from test_is_valid_rule_conditions
             {"conditions": {"invalid_condition": "10MB"}, "action": {}},
-            # Invalid size value
             {"conditions": {"larger": "abc"}, "action": {}},
-            # Invalid time value
             {"conditions": {"older": "abc"}, "action": {}},
-            # Invalid regular expression
             {"conditions": {"regex": "[invalid[regex]"}, "action": {}},
-        ]
-
-        for i, rule in enumerate(valid_rules):
-            errors = validate_rules_file([rule])
-            self.assertEqual(errors, [], f"Rule #{i + 1} should be valid")
-
-        for i, rule in enumerate(invalid_rules):
-            errors = validate_rules_file([rule])
-            self.assertTrue(len(errors) > 0, f"Rule #{i + 1} should be invalid")
-            self.assertIn("Rule #1", errors[0])
-
-    def test_is_valid_rule_action(self):
-        valid_actions = [
-            {"type": "move", "target": "/path/to/target"},
-            {"type": "delete"},
-            {"type": "compress", "target": "."},
-        ]
-
-        invalid_actions = [
-            # Missing type
-            {},
-            # Invalid action type
-            {"type": "invalid_type"},
-            # Move action without target
-            {"type": "move"},
-        ]
-
-        for i, action in enumerate(valid_actions):
-            rule = {"conditions": {"larger": "10MB"}, "action": action}
-            errors = validate_rules_file([rule])
-            self.assertEqual(errors, [], f"Action #{i + 1} should be valid")
-
-        for i, action in enumerate(invalid_actions):
-            rule = {"conditions": {"larger": "10MB"}, "action": action}
-            errors = validate_rules_file([rule])
-            self.assertTrue(len(errors) > 0, f"Action #{i + 1} should be invalid")
-            if action.get("type") == "move":
-                self.assertIn("'target'", errors[0])
-
-    def test_is_valid_rule_check_archive(self):
-        valid_rules = [
-            {
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "delete"},
-                "check_archive": False,
-            },
-            {
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "delete"},
-                "check_archive": True,
-            },
-        ]
-
-        invalid_rules = [
-            # Non-boolean check_archive value
+            # Additional invalid from test_is_valid_rule_action
+            {"conditions": {"larger": "10MB"}, "action": {}},
+            {"conditions": {"larger": "10MB"}, "action": {"type": "invalid_type"}},
+            {"conditions": {"larger": "10MB"}, "action": {"type": "move"}},
+            # Additional invalid from test_is_valid_rule_check_archive
             {
                 "conditions": {"larger": "10MB"},
                 "action": {"type": "delete"},
                 "check_archive": 42,
-            }
+            },
         ]
-
-        for i, rule in enumerate(valid_rules):
-            errors = validate_rules_file([rule])
-            self.assertEqual(errors, [], f"Rule #{i + 1} should be valid")
-
         for i, rule in enumerate(invalid_rules):
             errors = validate_rules_file([rule])
-            self.assertTrue(len(errors) > 0, f"Rule #{i + 1} should be invalid")
-            self.assertIn("must be boolean", errors[0])
+            self.assertTrue(len(errors) > 0, f"Invalid rule #{i + 1} should fail")
+            if isinstance(rule, dict):
+                if rule.get("action") == {"type": "move"} or (
+                    rule.get("conditions")
+                    and rule.get("action", {}).get("type") == "move"
+                ):
+                    self.assertIn("'target'", errors[0])
+                elif "check_archive" in rule and isinstance(rule["check_archive"], int):
+                    self.assertIn("must be boolean", errors[0])
 
 
 if __name__ == "__main__":

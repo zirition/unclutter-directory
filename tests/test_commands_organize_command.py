@@ -172,9 +172,7 @@ class TestOrganizeCommandProcessing(unittest.TestCase):
         command._process_files()
 
         # Verify collector was called
-        self.mock_collector.collect.assert_called_once_with(
-            self.mock_config.target_dir, self.mock_config.rules_file_path
-        )
+        self.mock_collector.collect.assert_called_once_with(self.mock_config.target_dir)
 
         # Verify no processing occurred
         mock_processor_cls.assert_not_called()

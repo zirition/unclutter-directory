@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -39,84 +40,72 @@ class TestRulesFileValidator(unittest.TestCase):
         errors = self.validator.validate(config)
         self.assertTrue(any("does not exist" in e for e in errors))
 
-    @patch("pathlib.Path.is_file", return_value=False)
-    def test_rules_file_not_regular_file(self, mock_is_file):
-        # Create default file with invalid YAML content
-        default_file = self.target_dir / ".unclutter_rules.yaml"
-        default_file.write_text("invalid: [unclosed")
-        config = self.make_config(rules_file=str(default_file))
+    def test_rules_file_is_directory(self):
+        # Test with a directory path
+        config = self.make_config(rules_file=str(self.target_dir))
         errors = self.validator.validate(config)
         self.assertTrue(any("not a regular file" in e for e in errors))
 
-    @patch("pathlib.Path.stat")
-    def test_rules_file_too_large(self, mock_stat):
-        mock_stat.return_value.st_size = 11 * 1024 * 1024  # 11MB
-        config = self.make_config(rules_file="/some/path.yaml")
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.is_file", return_value=True
-        ):
+    def test_rules_file_too_large(self):
+        # Create a temporary file larger than 10MB limit
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"0" * (11 * 1024 * 1024))  # 11MB
+            large_file_path = f.name
+        try:
+            config = self.make_config(rules_file=large_file_path)
             errors = self.validator.validate(config)
-        self.assertTrue(any("too large" in e for e in errors))
+            self.assertTrue(any("too large" in e for e in errors))
+        finally:
+            Path(large_file_path).unlink(missing_ok=True)
 
-    @patch("pathlib.Path.stat")
-    def test_rules_file_empty(self, mock_stat):
-        mock_stat.return_value.st_size = 0
-        config = self.make_config(rules_file="/some/path.yaml")
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.is_file", return_value=True
-        ):
+    def test_rules_file_empty(self):
+        # Create an empty temporary file
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            empty_file_path = f.name
+        try:
+            config = self.make_config(rules_file=empty_file_path)
             errors = self.validator.validate(config)
-        self.assertTrue(any("empty" in e for e in errors))
+            self.assertTrue(any("empty" in e for e in errors))
+        finally:
+            Path(empty_file_path).unlink(missing_ok=True)
 
-    @patch("pathlib.Path.stat")
-    def test_rules_file_not_readable(self, mock_stat):
-        # No read permission bit set
-        mock_stat.return_value.st_size = 100
-        mock_stat.return_value.st_mode = 0o200  # write only
-        config = self.make_config(rules_file="/some/path.yaml")
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.is_file", return_value=True
-        ):
+    def test_rules_file_not_readable(self):
+        # Create a temporary file with no read permissions
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"some content")
+            no_read_file = f.name
+        os.chmod(no_read_file, 0o200)  # write only
+        try:
+            config = self.make_config(rules_file=no_read_file)
             errors = self.validator.validate(config)
-        self.assertTrue(any("not readable" in e for e in errors))
+            self.assertTrue(any("not readable" in e for e in errors))
+        finally:
+            os.chmod(no_read_file, 0o600)  # restore read permission to allow deletion
+            Path(no_read_file).unlink(missing_ok=True)
 
     def test_load_rules_invalid_yaml(self):
-        config = self.make_config(rules_file=None)
         # Create default file with invalid YAML content
         default_file = self.target_dir / ".unclutter_rules.yaml"
         default_file.write_text("invalid: [unclosed")
-        config.rules_file = str(default_file)
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.is_file", return_value=True
-        ), patch("pathlib.Path.stat") as mock_stat:
-            mock_stat.return_value.st_size = len(default_file.read_text())
-            mock_stat.return_value.st_mode = 0o400
-            errors = self.validator.validate(config)
+        config = self.make_config(rules_file=None)  # Will auto-detect default file
+        errors = self.validator.validate(config)
         self.assertTrue(
             any("Failed to load rules" in e or "Unexpected error" in e for e in errors)
         )
 
     def test_load_rules_empty_or_not_list(self):
+        # Test empty file with whitespace
         config = self.make_config(rules_file=None)
         default_file = self.target_dir / ".unclutter_rules.yaml"
-        default_file.write_text("")  # empty file
+        default_file.write_text("   ")  # whitespace only, triggers internal empty check
         config.rules_file = str(default_file)
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.is_file", return_value=True
-        ), patch("pathlib.Path.stat") as mock_stat:
-            mock_stat.return_value.st_size = 1
-            mock_stat.return_value.st_mode = 0o400
-            errors = self.validator.validate(config)
+        errors = self.validator.validate(config)
         self.assertTrue(any("Failed to load rules" in e for e in errors))
 
-        # Write non-list YAML content
+        # Test non-list content
         default_file.write_text("key: value")
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.is_file", return_value=True
-        ), patch("pathlib.Path.stat") as mock_stat:
-            mock_stat.return_value.st_size = len(default_file.read_text())
-            mock_stat.return_value.st_mode = 0o400
-            errors = self.validator.validate(config)
+        config.rules_file = str(default_file)
+        errors = self.validator.validate(config)
         self.assertTrue(any("Failed to load rules" in e for e in errors))
 
     @patch("unclutter_directory.commons.validate_rules_file")
@@ -128,13 +117,8 @@ class TestRulesFileValidator(unittest.TestCase):
             "- name: rule1\n  conditions:\n    larger: 100s\n  action:\n    type: move\n    target: /dest"
         )
         config.rules_file = str(default_file)
-        mock_validate_rules_file.return_value = ["Error in rule"]
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.is_file", return_value=True
-        ), patch("pathlib.Path.stat") as mock_stat:
-            mock_stat.return_value.st_size = len(default_file.read_text())
-            mock_stat.return_value.st_mode = 0o400
-            errors = self.validator.validate(config)
+        mock_validate_rules_file.return_value = ["Invalid size value"]
+        errors = self.validator.validate(config)
         self.assertTrue(any("Invalid size value" in e for e in errors))
 
     def test_exceptions_handling(self):
