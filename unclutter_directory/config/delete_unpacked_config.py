@@ -1,11 +1,13 @@
-"""
-Configuration class for the check-duplicates command.
-"""
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..commons import get_logger
+
+"""
+Configuration class for the check-duplicates command.
+"""
 
 logger = get_logger()
 

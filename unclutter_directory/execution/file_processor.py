@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from ..entities.file import File
 from ..file_operations.file_matcher import FileMatcher
@@ -69,7 +69,7 @@ class FileProcessor:
 
         return True
 
-    def process_files(self, file_paths: list[Path], target_dir: Path) -> Dict[str, int]:
+    def process_files(self, file_paths: List[Path], target_dir: Path) -> Dict[str, int]:
         """
         Process multiple files and return statistics
 
