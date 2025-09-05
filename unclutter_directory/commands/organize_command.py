@@ -1,15 +1,14 @@
-import logging
 import sys
 from typing import Dict
 
-from ..commons import validations
+from ..commons import get_logger, setup_logging
 from ..config.organize_config import OrganizeConfig
 from ..execution.file_processor import FileProcessor
 from ..execution.strategies import RuleResponses
 from ..factories.component_factory import ComponentFactory
 from ..validation.validation_chain import ValidationChain
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class OrganizeCommand:
@@ -49,10 +48,7 @@ class OrganizeCommand:
 
     def _setup_logging(self) -> None:
         """Configure logging based on configuration"""
-        level = logging.ERROR if self.config.quiet else logging.INFO
-        logging.basicConfig(
-            level=level, format="%(message)s", handlers=[logging.StreamHandler()]
-        )
+        setup_logging(self.config.quiet)
 
     def _validate_config(self) -> None:
         """Validate configuration and exit if invalid"""

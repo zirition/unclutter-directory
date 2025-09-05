@@ -6,12 +6,12 @@ import os
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from ..commons import validations
+from ..commons import get_logger
 from ..entities.compressed_archive import get_archive_manager
 from ..entities.file import File
 from .directory_analyzer import DirectoryAnalyzer
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class ComparisonResult:

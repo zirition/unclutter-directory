@@ -13,7 +13,7 @@ The factory pattern allows for:
 
 from typing import Dict, List, Optional, Type
 
-from ..commons import validations
+from ..commons import get_logger
 from .action_strategies import (
     ActionStrategy,
     CompressStrategy,
@@ -59,7 +59,7 @@ class ActionStrategyFactory:
             ...     strategy.execute(file_path, parent_path, target)
         """
         if logger_instance is None:
-            logger_instance = validations.get_logger()
+            logger_instance = get_logger()
 
         strategy_class = cls._strategies.get(action_type)
         if not strategy_class:

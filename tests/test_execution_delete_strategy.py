@@ -180,13 +180,11 @@ class TestAutomaticDeleteStrategy(unittest.TestCase):
         """Test initialization with default values"""
         strategy = AutomaticDeleteStrategy()
         self.assertFalse(strategy.always_delete)
-        self.assertFalse(strategy.never_delete)
 
     def test_init_with_flags(self):
         """Test initialization with specific flags"""
-        strategy = AutomaticDeleteStrategy(always_delete=True, never_delete=False)
+        strategy = AutomaticDeleteStrategy(always_delete=True)
         self.assertTrue(strategy.always_delete)
-        self.assertFalse(strategy.never_delete)
 
     def test_should_delete_directory_always_delete_true(self):
         """Test should_delete when always_delete is True"""
@@ -196,9 +194,9 @@ class TestAutomaticDeleteStrategy(unittest.TestCase):
         )
         self.assertTrue(result)
 
-    def test_should_delete_directory_never_delete_true(self):
-        """Test should_delete when never_delete is True"""
-        strategy = AutomaticDeleteStrategy(never_delete=True)
+    def test_should_delete_directory_never_delete_mode(self):
+        """Test should_delete in dry-run mode (previously never_delete)"""
+        strategy = DryRunDeleteStrategy()
         result = strategy.should_delete_directory(
             self.directory_path, self.archive_path
         )
@@ -212,27 +210,16 @@ class TestAutomaticDeleteStrategy(unittest.TestCase):
         )
         self.assertFalse(result)
 
-    def test_should_delete_directory_both_true(self):
-        """Test should_delete when both flags are True (never_delete takes precedence)"""
-        strategy = AutomaticDeleteStrategy(always_delete=True, never_delete=True)
-        result = strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-        self.assertFalse(result)
 
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_should_delete_directory_never_delete_logging(self, mock_logger):
-        """Test logging when never_delete flag is used"""
-        strategy = AutomaticDeleteStrategy(never_delete=True)
+    def test_should_delete_directory_dry_run_logging(self):
+        """Test should_delete_directory returns False in dry-run mode"""
+        strategy = DryRunDeleteStrategy()
 
         result = strategy.should_delete_directory(
             self.directory_path, self.archive_path
         )
 
         self.assertFalse(result)
-        mock_logger.info.assert_called_once_with(
-            f"Skipping deletion of {self.directory_path} (never-delete mode)"
-        )
 
     def test_should_delete_directory_both_false_logging(self):
         """Test behavior when both flags are False"""
@@ -299,43 +286,38 @@ class TestCreateDeleteStrategy(unittest.TestCase):
     def test_create_interactive_strategy_explicit(self):
         """Test creating InteractiveDeleteStrategy explicitly"""
         strategy = create_delete_strategy(
-            dry_run=False, always_delete=False, never_delete=False
+            always_delete=False, never_delete=False
         )
         self.assertIsInstance(strategy, InteractiveDeleteStrategy)
 
     def test_create_dry_run_strategy(self):
         """Test creating DryRunDeleteStrategy"""
         strategy = create_delete_strategy(
-            dry_run=True, always_delete=False, never_delete=False
+            never_delete=True
         )
         self.assertIsInstance(strategy, DryRunDeleteStrategy)
 
     def test_create_automatic_strategy_always_delete(self):
         """Test creating AutomaticDeleteStrategy with always_delete"""
         strategy = create_delete_strategy(
-            dry_run=False, always_delete=True, never_delete=False
+            always_delete=True, never_delete=False
         )
         self.assertIsInstance(strategy, AutomaticDeleteStrategy)
         self.assertTrue(strategy.always_delete)
-        self.assertFalse(strategy.never_delete)
 
     def test_create_automatic_strategy_never_delete(self):
-        """Test creating AutomaticDeleteStrategy with never_delete"""
+        """Test creating DryRunDeleteStrategy when never_delete is True"""
         strategy = create_delete_strategy(
-            dry_run=False, always_delete=False, never_delete=True
+            always_delete=False, never_delete=True
         )
-        self.assertIsInstance(strategy, AutomaticDeleteStrategy)
-        self.assertFalse(strategy.always_delete)
-        self.assertTrue(strategy.never_delete)
+        self.assertIsInstance(strategy, DryRunDeleteStrategy)
 
     def test_create_automatic_strategy_both_flags(self):
-        """Test creating AutomaticDeleteStrategy with both flags"""
+        """Test creating DryRunDeleteStrategy when never_delete overrides always_delete"""
         strategy = create_delete_strategy(
-            dry_run=False, always_delete=True, never_delete=True
+            always_delete=True, never_delete=True
         )
-        self.assertIsInstance(strategy, AutomaticDeleteStrategy)
-        self.assertTrue(strategy.always_delete)
-        self.assertTrue(strategy.never_delete)
+        self.assertIsInstance(strategy, DryRunDeleteStrategy)
 
 
 if __name__ == "__main__":

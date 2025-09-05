@@ -6,9 +6,9 @@ Provides both interactive and non-interactive deletion of duplicate directories.
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from ..commons import validations
+from ..commons import get_logger
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class DeleteConfirmationStrategy(ABC):
@@ -109,16 +109,14 @@ class InteractiveDeleteStrategy(DeleteConfirmationStrategy):
 class AutomaticDeleteStrategy(DeleteConfirmationStrategy):
     """Strategy for automatic deletion without user interaction."""
 
-    def __init__(self, always_delete: bool = False, never_delete: bool = False):
+    def __init__(self, always_delete: bool = False):
         """
         Initialize automatic delete strategy.
 
         Args:
             always_delete: If True, always delete duplicate directories
-            never_delete: If True, never delete directories (report only)
         """
         self.always_delete = always_delete
-        self.never_delete = never_delete
 
     def should_delete_directory(self, directory_path: Path, archive_path: Path) -> bool:
         """
@@ -131,10 +129,6 @@ class AutomaticDeleteStrategy(DeleteConfirmationStrategy):
         Returns:
             True if directory should be deleted, False otherwise
         """
-        if self.never_delete:
-            logger.info(f"Skipping deletion of {directory_path} (never-delete mode)")
-            return False
-
         if self.always_delete:
             return True
 
@@ -161,7 +155,6 @@ class DryRunDeleteStrategy(DeleteConfirmationStrategy):
 
 
 def create_delete_strategy(
-    dry_run: bool = False,
     always_delete: bool = False,
     never_delete: bool = False,
     interactive: bool = True,
@@ -170,25 +163,22 @@ def create_delete_strategy(
     Factory function to create the appropriate delete strategy.
 
     Args:
-        dry_run: If True, use dry run strategy
         always_delete: If True, use automatic strategy with always delete
-        never_delete: If True, use automatic strategy with never delete
+        never_delete: If True, use automatic strategy with never delete (dry run)
         interactive: If True, use interactive strategy when not in other modes
 
     Returns:
         DeleteConfirmationStrategy instance
     """
-    if dry_run:
+    if never_delete:
         return DryRunDeleteStrategy()
-    elif always_delete or never_delete:
-        return AutomaticDeleteStrategy(
-            always_delete=always_delete, never_delete=never_delete
-        )
+    elif always_delete:
+        return AutomaticDeleteStrategy(always_delete=always_delete)
     elif interactive:
         return InteractiveDeleteStrategy()
     else:
-        # Default to never delete for safety
+        # Default to never delete (dry run) for safety
         logger.warning(
-            "No explicit delete strategy specified, defaulting to never delete"
+            "No explicit delete strategy specified, defaulting to dry run mode"
         )
-        return AutomaticDeleteStrategy(always_delete=False, never_delete=True)
+        return DryRunDeleteStrategy()

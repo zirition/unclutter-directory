@@ -4,12 +4,12 @@ Delete Unpacked Command - Removes uncompressed directories that match compressed
 
 from typing import List
 
-from ..commons import validations
+from ..commons import get_logger, setup_logging
 from ..comparison import ArchiveDirectoryComparator, ComparisonResult
 from ..config.delete_unpacked_config import DeleteUnpackedConfig
 from ..execution.delete_strategy import create_delete_strategy
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class DeleteUnpackedCommand:
@@ -27,7 +27,7 @@ class DeleteUnpackedCommand:
             include_hidden=config.include_hidden
         )
         self.delete_strategy = create_delete_strategy(
-            dry_run=config.dry_run,
+            dry_run=False,
             always_delete=config.always_delete,
             never_delete=config.never_delete,
             interactive=config.should_interactive_prompt(),
@@ -39,6 +39,7 @@ class DeleteUnpackedCommand:
         Finds archive-directory pairs and compares them, potentially deleting duplicates.
         """
         try:
+            setup_logging(self.config.quiet)
             logger.info(
                 f"🔍 Scanning for uncompressed directories in {self.config.target_dir}"
             )
@@ -79,7 +80,7 @@ class DeleteUnpackedCommand:
                         ):
                             # Perform the deletion
                             if self.delete_strategy.perform_deletion(
-                                directory_path, archive_path, self.config.dry_run
+                                directory_path, archive_path, False
                             ):
                                 deleted_count += 1
                         else:
@@ -126,7 +127,3 @@ class DeleteUnpackedCommand:
         logger.info(f"   • Different structures: {summary['different']}")
         logger.info(f"   • Directories deleted: {deleted_count}")
 
-        if self.config.dry_run and deleted_count > 0:
-            logger.info(
-                "   • Note: This was a dry run - no directories were actually deleted"
-            )

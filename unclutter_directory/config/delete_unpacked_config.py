@@ -4,9 +4,9 @@ Configuration class for the check-duplicates command.
 
 from pathlib import Path
 
-from ..commons import validations
+from ..commons import get_logger
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class DeleteUnpackedConfig:
@@ -19,6 +19,7 @@ class DeleteUnpackedConfig:
         always_delete: bool = False,
         never_delete: bool = False,
         include_hidden: bool = False,
+        quiet: bool = False,
     ):
         """
         Initialize check duplicates configuration
@@ -29,12 +30,14 @@ class DeleteUnpackedConfig:
             always_delete: If True, delete duplicate directories without confirmation
             never_delete: If True, never delete directories (only report)
             include_hidden: Whether to include hidden files and directories
+            quiet: If True, suppress non-error messages
         """
         self.target_dir = target_dir
         self.dry_run = dry_run
         self.always_delete = always_delete
         self.never_delete = never_delete
         self.include_hidden = include_hidden
+        self.quiet = quiet
 
         # Computed properties
         self._target_dir_path = None
@@ -107,6 +110,8 @@ class DeleteUnpackedConfig:
             flags.append("never-delete")
         if self.include_hidden:
             flags.append("include-hidden")
+        if self.quiet:
+            flags.append("quiet")
 
         flag_str = f" [{', '.join(flags)}]" if flags else ""
         return f"{self.__class__.__name__}(target_dir={self.target_dir}{flag_str})"

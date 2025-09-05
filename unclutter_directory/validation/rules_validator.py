@@ -3,13 +3,13 @@ from typing import List, Optional
 
 import yaml
 
-from ..commons import validations
+from ..commons import get_logger
 from ..commons.validations import Rules, validate_rules_file
 from ..config.organize_config import OrganizeConfig
 from .base import Validator
 
 # Usar el logger de commons
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class RulesFileValidator(Validator):

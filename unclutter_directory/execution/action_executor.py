@@ -16,11 +16,11 @@ comprehensive error handling for all file operations.
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from unclutter_directory.commons import validations
+from unclutter_directory.commons import get_logger, validations
 
 from .action_strategy_factory import ActionStrategyFactory
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class ActionExecutor:

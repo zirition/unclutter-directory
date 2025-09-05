@@ -6,10 +6,10 @@ import os
 from pathlib import Path
 from typing import Dict, List
 
-from ..commons import validations
+from ..commons import get_logger
 from ..entities.file import File
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class DirectoryAnalyzer:

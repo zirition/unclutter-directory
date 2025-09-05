@@ -6,10 +6,10 @@ import py7zr
 import rarfile
 from rarfile import RarFile
 
-from unclutter_directory.commons import validations
+from unclutter_directory.commons import get_logger
 from unclutter_directory.entities.file import File
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class CompressedArchive(ABC):

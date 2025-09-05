@@ -2,7 +2,7 @@ import yaml
 
 from unclutter_directory.commons.aliases import Rules
 
-from ..commons import validations
+from ..commons import get_logger
 from ..config.organize_config import ExecutionMode, OrganizeConfig
 from ..execution.strategies import (
     AutomaticStrategy,
@@ -13,7 +13,7 @@ from ..execution.strategies import (
 from ..file_operations.file_collector import FileCollector
 from ..file_operations.file_matcher import FileMatcher
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class ComponentFactory:

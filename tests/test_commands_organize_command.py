@@ -40,31 +40,27 @@ class TestOrganizeCommand(unittest.TestCase):
         self.assertIsInstance(command.factory, ComponentFactory)
         self.assertEqual(command.rule_responses, {})
 
-    @patch("unclutter_directory.commands.organize_command.logging")
-    def test_setup_logging_quiet_mode(self, mock_logging):
+    @patch("unclutter_directory.commands.organize_command.setup_logging")
+    def test_setup_logging_quiet_mode(self, mock_setup_logging):
         """Test logging setup in quiet mode"""
         self.mock_config.quiet = True
 
         command = OrganizeCommand(self.mock_config)
         command._setup_logging()
 
-        # Verify basicConfig is called with ERROR level
-        mock_logging.basicConfig.assert_called_once()
-        call_args = mock_logging.basicConfig.call_args[1]
-        self.assertEqual(call_args["level"], mock_logging.ERROR)
+        # Verify setup_logging is called with True
+        mock_setup_logging.assert_called_once_with(True)
 
-    @patch("unclutter_directory.commands.organize_command.logging")
-    def test_setup_logging_verbose_mode(self, mock_logging):
+    @patch("unclutter_directory.commands.organize_command.setup_logging")
+    def test_setup_logging_verbose_mode(self, mock_setup_logging):
         """Test logging setup in verbose mode"""
         self.mock_config.quiet = False
 
         command = OrganizeCommand(self.mock_config)
         command._setup_logging()
 
-        # Verify basicConfig is called with INFO level
-        mock_logging.basicConfig.assert_called_once()
-        call_args = mock_logging.basicConfig.call_args[1]
-        self.assertEqual(call_args["level"], mock_logging.INFO)
+        # Verify setup_logging is called with False
+        mock_setup_logging.assert_called_once_with(False)
 
 
 class TestOrganizeCommandValidation(unittest.TestCase):

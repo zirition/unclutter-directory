@@ -7,12 +7,12 @@ from click_supercharged import SuperchargedClickGroup
 
 from .commands.delete_unpacked_command import DeleteUnpackedCommand
 from .commands.organize_command import OrganizeCommand
-from .commons import validations
+from .commons import get_logger
 from .config.delete_unpacked_config import DeleteUnpackedConfig
 from .config.organize_config import OrganizeConfig
 from .validation.rules_validator import RulesFileValidator
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 @click.group(cls=SuperchargedClickGroup)
@@ -140,12 +140,14 @@ def validate(rules_file: str) -> None:
     is_flag=True,
     help="Include hidden files and directories in comparison",
 )
+@click.option("--quiet", "-q", is_flag=True, help="Suppress non-error messages")
 def delete_unpacked(
     target_dir: Path,
     dry_run: bool,
     always_delete: bool,
     never_delete: bool,
     include_hidden: bool,
+    quiet: bool,
 ) -> None:
     """
     Remove uncompressed directories that match compressed files.
@@ -174,6 +176,7 @@ def delete_unpacked(
             always_delete=always_delete,
             never_delete=never_delete,
             include_hidden=include_hidden,
+            quiet=quiet,
         )
 
         # Execute check duplicates command

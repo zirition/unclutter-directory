@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import List, Optional
 
-from ..commons import validations
+from ..commons import get_logger
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class FileCollector:

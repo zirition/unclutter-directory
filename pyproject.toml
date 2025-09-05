@@ -60,5 +60,6 @@ ignore = [
     "C901",  # too complex
 ]
 
+
 [project.optional-dependencies]
 dev = ["ruff"]

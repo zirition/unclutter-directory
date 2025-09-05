@@ -1,9 +1,9 @@
 from datetime import datetime
 from pathlib import Path
 
-from unclutter_directory.commons import validations
+from unclutter_directory.commons import get_logger
 
-logger = validations.get_logger()
+logger = get_logger()
 
 
 class File:

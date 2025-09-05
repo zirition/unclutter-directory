@@ -4,9 +4,9 @@ from typing import Dict, Optional
 
 from unclutter_directory.commons.aliases import Rule
 
-from ..commons import validations
+from ..commons import get_logger
 
-logger = validations.get_logger()
+logger = get_logger()
 
 # Type aliases
 RuleResponses = Dict[int, str]

@@ -1,26 +1,11 @@
-import logging
 import re
-import sys
 from typing import Any, Dict, List
 
+from unclutter_directory.commons.logging import logger
 from unclutter_directory.commons.parsers import parse_size, parse_time
 
 # Type aliases
 Rules = List[dict]
-
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
-logger = logging.getLogger("unclutter_directory")
-
-
-def get_logger():
-    return logger
-
-
 # Constantes para validación
 VALID_CONDITIONS = {
     "start",
