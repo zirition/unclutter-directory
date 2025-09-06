@@ -70,16 +70,19 @@ class SevenZipArchive(CompressedArchive):
         archive_path = file.path / file.name
         try:
             with py7zr.SevenZipFile(archive_path, mode="r") as szf:
-                return [
-                    File(
-                        file.path,
-                        info.filename,
-                        info.modification_time,
-                        info.size,
+                files = []
+                for name in szf.getnames():
+                    file_info = szf.getinfo(name)
+                    files.append(
+                        File(
+                            file.path,
+                            name,
+                            file_info.lastwritetime,
+                            file_info.uncompressed,
+                        )
                     )
-                    for info in szf.archive.infoheader.files
-                ]
-        except (py7zr.Bad7zFile, py7zr.ArchiveError) as e:
+                return files
+        except py7zr.Bad7zFile as e:
             logger.error(f"❌ Error reading 7z file {archive_path}: {e}")
             return []
         except Exception as e:

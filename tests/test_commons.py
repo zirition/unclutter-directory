@@ -1,130 +1,123 @@
-import unittest
+import pytest
 
 from unclutter_directory.commons.parsers import parse_size, parse_time
 from unclutter_directory.commons.validations import validate_rules_file
 
 
-class TestCommons(unittest.TestCase):
-    def test_parse_size(self):
-        # Test different size units
-        self.assertEqual(parse_size("1KB"), 1024)
-        self.assertEqual(parse_size("1MB"), 1024**2)
-        self.assertEqual(parse_size("1GB"), 1024**3)
-
-        # Test raw numbers
-        self.assertEqual(parse_size("1024"), 1024)
-
-        # Test with spaces
-        self.assertEqual(parse_size("1 KB"), 1024)
-
-        # Test case insensitivity
-        self.assertEqual(parse_size("1kb"), 1024)
-
-        # Test invalid input
-        with self.assertRaises(ValueError):
-            parse_size("invalid")
-
-    def test_parse_time(self):
-        # Test different time units
-        self.assertEqual(parse_time("1s"), 1)
-        self.assertEqual(parse_time("1m"), 60)
-        self.assertEqual(parse_time("1h"), 3600)
-        self.assertEqual(parse_time("1d"), 86400)
-
-        # Test raw numbers
-        self.assertEqual(parse_time("60"), 60)
-
-        # Test with spaces
-        self.assertEqual(parse_time("1 h"), 3600)
-
-        # Test invalid input
-        with self.assertRaises(ValueError):
-            parse_time("invalid")
-
-    def test_validate_rules_file(self):
-        # Test valid rules
-        valid_rules = [
-            {
-                "conditions": {"larger": "1KB", "newer": "1d"},
-                "action": {"type": "move", "target": "/path/to/target"},
-                "check_archive": True,
-            },
-            {  # Additional valid from test_is_valid_rule_conditions
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "move", "target": "/path/to/target"},
-            },
-            {"conditions": {"contain": "keyword"}, "action": {"type": "delete"}},
-            {
-                "conditions": {"regex": "[a-z]+"},
-                "action": {"type": "compress", "target": "."},
-            },
-            {  # Additional valid from test_is_valid_rule_action
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "delete"},
-            },
-            {
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "compress", "target": "."},
-            },
-            {  # Additional valid from test_is_valid_rule_check_archive
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "delete"},
-                "check_archive": False,
-            },
-            {
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "delete"},
-                "check_archive": True,
-            },
-        ]
-        for i, rule in enumerate(valid_rules):
-            self.assertEqual(
-                validate_rules_file([rule]), [], f"Valid rule #{i + 1} should pass"
-            )
-
-        # Test invalid rules format
-        self.assertTrue(len(validate_rules_file("not a list")) > 0)
-
-        # Test invalid rule structure
-        invalid_rules = [
-            "not a dict",
-            {"conditions": "not a dict"},
-            {"conditions": {"invalid": "value"}},
-            {"conditions": {"larger": "invalid"}},
-            {"conditions": {"newer": "invalid"}},
-            {"conditions": {"regex": "["}},
-            {"action": "not a dict"},
-            {"conditions": {"larger": "10MB"}, "action": {"type": "invalid"}},
-            {"conditions": {"larger": "10MB"}, "action": {"type": "move"}},
-            {"check_archive": "not a bool"},
-            # Additional invalid from test_is_valid_rule_conditions
-            {"conditions": {"invalid_condition": "10MB"}, "action": {}},
-            {"conditions": {"larger": "abc"}, "action": {}},
-            {"conditions": {"older": "abc"}, "action": {}},
-            {"conditions": {"regex": "[invalid[regex]"}, "action": {}},
-            # Additional invalid from test_is_valid_rule_action
-            {"conditions": {"larger": "10MB"}, "action": {}},
-            {"conditions": {"larger": "10MB"}, "action": {"type": "invalid_type"}},
-            {"conditions": {"larger": "10MB"}, "action": {"type": "move"}},
-            # Additional invalid from test_is_valid_rule_check_archive
-            {
-                "conditions": {"larger": "10MB"},
-                "action": {"type": "delete"},
-                "check_archive": 42,
-            },
-        ]
-        for i, rule in enumerate(invalid_rules):
-            errors = validate_rules_file([rule])
-            self.assertTrue(len(errors) > 0, f"Invalid rule #{i + 1} should fail")
-            if isinstance(rule, dict):
-                if rule.get("action") == {"type": "move"} or (
-                    rule.get("conditions")
-                    and rule.get("action", {}).get("type") == "move"
-                ):
-                    self.assertIn("'target'", errors[0])
-                elif "check_archive" in rule and isinstance(rule["check_archive"], int):
-                    self.assertIn("must be boolean", errors[0])
+@pytest.mark.parametrize(
+    "input_str, expected",
+    [
+        ("1KB", 1024),
+        ("1MB", 1048576),
+        ("1GB", 1073741824),
+        ("1024", 1024),
+        ("1 KB", 1024),
+        ("1kb", 1024),
+    ],
+)
+def test_parse_size_valid(input_str, expected):
+    assert parse_size(input_str) == expected
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_parse_size_invalid():
+    with pytest.raises(ValueError):
+        parse_size("invalid")
+
+
+@pytest.mark.parametrize(
+    "input_str, expected",
+    [
+        ("1s", 1),
+        ("1m", 60),
+        ("1h", 3600),
+        ("1d", 86400),
+        ("60", 60),
+        ("1 h", 3600),
+    ],
+)
+def test_parse_time_valid(input_str, expected):
+    assert parse_time(input_str) == expected
+
+
+def test_parse_time_invalid():
+    with pytest.raises(ValueError):
+        parse_time("invalid")
+
+
+valid_rules = [
+    {
+        "conditions": {"larger": "1KB", "newer": "1d"},
+        "action": {"type": "move", "target": "/path/to/target"},
+        "check_archive": True,
+    },
+    {
+        "conditions": {"larger": "10MB"},
+        "action": {"type": "move", "target": "/path/to/target"},
+    },
+    {"conditions": {"contain": "keyword"}, "action": {"type": "delete"}},
+    {
+        "conditions": {"regex": "[a-z+]"},
+        "action": {"type": "compress", "target": "."},
+    },
+    {
+        "conditions": {"larger": "10MB"},
+        "action": {"type": "delete"},
+    },
+    {
+        "conditions": {"larger": "10MB"},
+        "action": {"type": "compress", "target": "."},
+    },
+    {
+        "conditions": {"larger": "10MB"},
+        "action": {"type": "delete"},
+        "check_archive": False,
+    },
+    {
+        "conditions": {"larger": "10MB"},
+        "action": {"type": "delete"},
+        "check_archive": True,
+    },
+]
+
+
+@pytest.mark.parametrize("rule", valid_rules)
+def test_validate_rules_valid(rule):
+    assert validate_rules_file([rule]) == []
+
+
+invalid_rules_cases = [
+    ("not a list", None),
+    ("not a dict", None),
+    ({"conditions": "not a dict"}, None),
+    ({"conditions": {"invalid": "value"}}, None),
+    ({"conditions": {"larger": "invalid"}}, None),
+    ({"conditions": {"newer": "invalid"}}, None),
+    ({"conditions": {"regex": "["}}, None),
+    ({"action": "not a dict"}, None),
+    ({"conditions": {"larger": "10MB"}, "action": {"type": "invalid"}}, None),
+    ({"conditions": {"larger": "10MB"}, "action": {"type": "move"}}, "'target'"),
+    ({"check_archive": "not a bool"}, "must be boolean"),
+    ({"conditions": {"invalid_condition": "10MB"}, "action": {}}, None),
+    ({"conditions": {"larger": "abc"}, "action": {}}, None),
+    ({"conditions": {"older": "abc"}, "action": {}}, None),
+    ({"conditions": {"regex": "[invalid[regex]"}, "action": {}}, None),
+    ({"conditions": {"larger": "10MB"}, "action": {}}, None),
+    ({"conditions": {"larger": "10MB"}, "action": {"type": "invalid_type"}}, None),
+    ({"conditions": {"larger": "10MB"}, "action": {"type": "move"}}, "'target'"),
+    (
+        {
+            "conditions": {"larger": "10MB"},
+            "action": {"type": "delete"},
+            "check_archive": 42,
+        },
+        "must be boolean",
+    ),
+]
+
+
+@pytest.mark.parametrize("rule, expected_error", invalid_rules_cases)
+def test_validate_rules_invalid(rule, expected_error):
+    errors = validate_rules_file([rule])
+    assert len(errors) > 0
+    if expected_error:
+        assert any(expected_error in error for error in errors)

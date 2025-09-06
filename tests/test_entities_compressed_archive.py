@@ -3,9 +3,9 @@ Tests for CompressedArchive implementations and handlers.
 """
 
 import tempfile
-import unittest
-import zipfile
 from pathlib import Path
+
+import pytest
 
 from unclutter_directory.entities.compressed_archive import (
     ArchiveHandlerChain,
@@ -20,107 +20,114 @@ from unclutter_directory.entities.compressed_archive import (
 from unclutter_directory.entities.file import File
 
 
-class TestCompressedArchive(unittest.TestCase):
-    """Test CompressedArchive base and implementations."""
-
-    def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.root = Path(self.temp_dir.name)
-
-    def tearDown(self):
-        """Clean up test fixtures."""
-        self.temp_dir.cleanup()
-
-    def test_zip_archive_get_files(self):
-        """Test ZipArchive get_files method."""
-        # Create a test zip file
-        zip_path = self.root / "test.zip"
-        with zipfile.ZipFile(zip_path, "w") as zf:
-            zf.writestr("file1.txt", "content1")
-            zf.writestr("file2.txt", "content2")
-
-        file_obj = File(self.root, "test.zip", None, None)
-        archive = ZipArchive()
-        files = archive.get_files(file_obj)
-
-        self.assertEqual(len(files), 2)
-        self.assertEqual(files[0].name, "file1.txt")
-        self.assertEqual(files[1].name, "file2.txt")
-
-    def test_zip_handler_can_handle(self):
-        """Test ZipHandler can_handle method."""
-        zip_file = File(self.root, "test.zip", None, None)
-        rar_file = File(self.root, "test.rar", None, None)
-        seven_zip_file = File(self.root, "test.7z", None, None)
-
-        handler = ZipHandler()
-        self.assertTrue(handler.can_handle(zip_file))
-        self.assertFalse(handler.can_handle(rar_file))
-        self.assertFalse(handler.can_handle(seven_zip_file))
-
-    def test_rar_handler_can_handle(self):
-        """Test RarHandler can_handle method."""
-        # Rar is harder to test without rarfile, so just check extension
-        zip_file = File(self.root, "test.zip", None, None)
-        rar_file = File(self.root, "test.rar", None, None)
-        seven_zip_file = File(self.root, "test.7z", None, None)
-
-        handler = RarHandler()
-        self.assertFalse(handler.can_handle(zip_file))
-        self.assertTrue(handler.can_handle(rar_file))
-        self.assertFalse(handler.can_handle(seven_zip_file))
-
-    def test_seven_zip_handler_can_handle(self):
-        """Test SevenZipHandler can_handle method."""
-        zip_file = File(self.root, "test.zip", None, None)
-        rar_file = File(self.root, "test.rar", None, None)
-        seven_zip_file = File(self.root, "test.7z", None, None)
-
-        handler = SevenZipHandler()
-        self.assertFalse(handler.can_handle(zip_file))
-        self.assertFalse(handler.can_handle(rar_file))
-        self.assertTrue(handler.can_handle(seven_zip_file))
-
-    def test_archive_handler_chain_with_zip(self):
-        """Test ArchiveHandlerChain with ZIP file."""
-        chain = ArchiveHandlerChain()
-        zip_file = File(self.root, "test.zip", None, None)
-        archive = chain.get_archive_handler(zip_file)
-        self.assertIsInstance(archive, ZipArchive)
-
-    def test_archive_handler_chain_with_seven_zip(self):
-        """Test ArchiveHandlerChain with 7Z file."""
-        chain = ArchiveHandlerChain()
-        seven_zip_file = File(self.root, "test.7z", None, None)
-        archive = chain.get_archive_handler(seven_zip_file)
-        self.assertIsInstance(archive, SevenZipArchive)
-
-    def test_archive_handler_chain_with_unsupported(self):
-        """Test ArchiveHandlerChain with unsupported file."""
-        chain = ArchiveHandlerChain()
-        unknown_file = File(self.root, "test.txt", None, None)
-        archive = chain.get_archive_handler(unknown_file)
-        self.assertIsNone(archive)
-
-    def test_get_archive_manager_zip(self):
-        """Test get_archive_manager with ZIP."""
-        zip_file = File(self.root, "test.zip", None, None)
-        archive = get_archive_manager(zip_file)
-        self.assertIsInstance(archive, ZipArchive)
-
-    def test_get_archive_manager_seven_zip(self):
-        """Test get_archive_manager with 7z."""
-        seven_zip_file = File(self.root, "test.7z", None, None)
-        archive = get_archive_manager(seven_zip_file)
-        self.assertIsInstance(archive, SevenZipArchive)
-
-    def test_get_archive_manager_rar(self):
-        """Test get_archive_manager with RAR."""
-        rar_file = File(self.root, "test.rar", None, None)
-        archive = get_archive_manager(rar_file)
-        self.assertIsInstance(archive, RarArchive)
+@pytest.fixture
+def temp_dir():
+    """Set up test fixtures."""
+    with tempfile.TemporaryDirectory() as temp_name:
+        root = Path(temp_name)
+        yield root
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.fixture
+def sample_files():
+    """Fixture for sample File objects with different archive extensions."""
+    data_dir = Path("tests/data/archives")
+    return {
+        "zip": File(data_dir, "test.zip", None, None),
+        "rar": File(data_dir, "test.rar", None, None),
+        "7z": File(data_dir, "test.7z", None, None),
+    }
+
+
+def test_zip_archive_get_files():
+    """Test ZipArchive get_files method."""
+    data_dir = Path("tests/data/archives")
+    file_obj = File(data_dir, "test.zip", None, None)
+    archive = ZipArchive()
+    files = archive.get_files(file_obj)
+
+    assert len(files) == 2
+    assert files[0].name == "file1.txt"
+    assert files[1].name == "file2.txt"
+
+
+def test_rar_archive_get_files():
+    """Test RarArchive get_files method."""
+    data_dir = Path("tests/data/archives")
+    file_obj = File(data_dir, "test.rar", None, None)
+    archive = RarArchive()
+    files = archive.get_files(file_obj)
+
+    assert len(files) == 2
+    assert files[0].name == "file1.txt"
+    assert files[1].name == "file2.txt"
+
+
+def test_seven_zip_archive_get_files():
+    """Test SevenZipArchive get_files method."""
+    data_dir = Path("tests/data/archives")
+    file_obj = File(data_dir, "test.7z", None, None)
+    archive = SevenZipArchive()
+    files = archive.get_files(file_obj)
+
+    assert len(files) == 2
+    assert files[0].name == "file1.txt"
+    assert files[1].name == "file2.txt"
+
+
+@pytest.mark.parametrize(
+    "handler_class, expected_zip, expected_rar, expected_7z",
+    [
+        (ZipHandler, True, False, False),
+        (RarHandler, False, True, False),
+        (SevenZipHandler, False, False, True),
+    ],
+    ids=["zip_handler", "rar_handler", "seven_zip_handler"],
+)
+def test_handler_can_handle(
+    sample_files, handler_class, expected_zip, expected_rar, expected_7z
+):
+    """Test handler can_handle method for different archive types."""
+    handler = handler_class()
+    assert handler.can_handle(sample_files["zip"]) == expected_zip
+    assert handler.can_handle(sample_files["rar"]) == expected_rar
+    assert handler.can_handle(sample_files["7z"]) == expected_7z
+
+
+@pytest.mark.parametrize(
+    "file_key, expected_type",
+    [
+        ("zip", ZipArchive),
+        ("7z", SevenZipArchive),
+        ("unsupported", None),
+    ],
+    ids=["zip", "7z", "unsupported"],
+)
+def test_archive_handler_chain(sample_files, temp_dir, file_key, expected_type):
+    """Test ArchiveHandlerChain get_archive_handler for different file types."""
+    chain = ArchiveHandlerChain()
+    if file_key == "unsupported":
+        file_obj = File(temp_dir, "test.txt", None, None)
+    else:
+        file_obj = sample_files[file_key]
+    archive = chain.get_archive_handler(file_obj)
+    if expected_type is None:
+        assert archive is None
+    else:
+        assert isinstance(archive, expected_type)
+
+
+@pytest.mark.parametrize(
+    "file_key, expected_type",
+    [
+        ("zip", ZipArchive),
+        ("7z", SevenZipArchive),
+        ("rar", RarArchive),
+    ],
+    ids=["zip", "7z", "rar"],
+)
+def test_get_archive_manager(sample_files, file_key, expected_type):
+    """Test get_archive_manager for different archive types."""
+    file_obj = sample_files[file_key]
+    archive = get_archive_manager(file_obj)
+    assert isinstance(archive, expected_type)

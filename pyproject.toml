@@ -60,6 +60,11 @@ ignore = [
     "C901",  # too complex
 ]
 
+[dependency-groups]
+dev = ["ruff", "pytest", "pytest-mock"]
+
 
 [project.optional-dependencies]
-dev = ["ruff"]
+dev = [
+    "coverage>=7.6.1",
+]

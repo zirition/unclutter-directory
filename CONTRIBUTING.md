@@ -29,7 +29,7 @@ uv sync --dev  # Install with development dependencies
 
 ```bash
 # Run tests
-uv run -m unittest discover tests
+uv run pytest
 
 # Code formatting and linting
 uv run ruff check .
@@ -78,7 +78,7 @@ To create a new release:
 - **Quality Checks** (on push/PR to main):
   - Lint: ruff (code quality)
   - Format: ruff format check
-  - Tests: unittest across Python 3.9-3.12
+  - Tests: pytest across Python 3.9-3.12
 
 - **Release on Tag**:
   - Tests are run before building

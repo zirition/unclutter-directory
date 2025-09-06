@@ -1,7 +1,8 @@
-import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
+
+import pytest
 
 from unclutter_directory.execution.delete_strategy import (
     AutomaticDeleteStrategy,
@@ -12,277 +13,267 @@ from unclutter_directory.execution.delete_strategy import (
 )
 
 
-class TestDeleteConfirmationStrategy(unittest.TestCase):
-    """Test base DeleteConfirmationStrategy class"""
-
-    def setUp(self):
-        self.temp_dir = TemporaryDirectory()
-        self.archive_path = Path(self.temp_dir.name) / "test.zip"
-        self.directory_path = Path(self.temp_dir.name) / "test_dir"
-
-    def tearDown(self):
-        self.temp_dir.cleanup()
-
-    def test_abstract_methods(self):
-        """Test that base class cannot be instantiated directly"""
-        with self.assertRaises(TypeError):
-            DeleteConfirmationStrategy()
+@pytest.fixture
+def temp_paths():
+    with TemporaryDirectory() as temp_dir_str:
+        temp_dir = Path(temp_dir_str)
+        archive_path = temp_dir / "test.zip"
+        directory_path = temp_dir / "test_dir"
+        yield archive_path, directory_path
 
 
-class TestInteractiveDeleteStrategy(unittest.TestCase):
-    """Test InteractiveDeleteStrategy class"""
-
-    def setUp(self):
-        self.temp_dir = TemporaryDirectory()
-        self.archive_path = Path(self.temp_dir.name) / "test.zip"
-        self.directory_path = Path(self.temp_dir.name) / "test_dir"
-        self.strategy = InteractiveDeleteStrategy()
-
-    def tearDown(self):
-        self.temp_dir.cleanup()
-
-    @patch("builtins.input")
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_should_delete_directory_yes_response(self, mock_logger, mock_input):
-        """Test user responding 'y' to delete prompt"""
-        mock_input.return_value = "y"
-
-        result = self.strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-
-        self.assertTrue(result)
-        mock_input.assert_called_once()
-
-    @patch("builtins.input")
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_should_delete_directory_no_response(self, mock_logger, mock_input):
-        """Test user responding 'n' to delete prompt"""
-        mock_input.return_value = "n"
-
-        result = self.strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-
-        self.assertFalse(result)
-        mock_input.assert_called_once()
-
-    @patch("builtins.input")
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_should_delete_directory_empty_response(self, mock_logger, mock_input):
-        """Test user responding with empty string (defaults to no)"""
-        mock_input.return_value = ""
-
-        result = self.strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-
-        self.assertFalse(result)
-
-    @patch("builtins.input")
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_should_delete_directory_invalid_response_then_valid(
-        self, mock_logger, mock_input
-    ):
-        """Test invalid response followed by valid response"""
-        mock_input.side_effect = ["invalid", "y"]
-
-        result = self.strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-
-        self.assertTrue(result)
-        self.assertEqual(mock_input.call_count, 2)
-
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_should_delete_directory_keyboard_interrupt(self, mock_logger):
-        """Test handling KeyboardInterrupt during input"""
-        with patch("builtins.input", side_effect=KeyboardInterrupt):
-            with self.assertRaises(KeyboardInterrupt):
-                self.strategy.should_delete_directory(
-                    self.directory_path, self.archive_path
-                )
-
-    def test_perform_deletion_success(self):
-        """Test successful directory deletion"""
-        with patch("shutil.rmtree") as mock_rmtree:
-            with patch(
-                "unclutter_directory.execution.delete_strategy.logger"
-            ) as mock_logger:
-                result = self.strategy.perform_deletion(
-                    self.directory_path, self.archive_path
-                )
-
-                self.assertTrue(result)
-                mock_rmtree.assert_called_once_with(self.directory_path)
-                mock_logger.info.assert_called_once()
-
-    def test_perform_deletion_error(self):
-        """Test handling deletion failure"""
-        with patch("shutil.rmtree", side_effect=OSError("Permission denied")):
-            with patch(
-                "unclutter_directory.execution.delete_strategy.logger"
-            ) as mock_logger:
-                result = self.strategy.perform_deletion(
-                    self.directory_path, self.archive_path
-                )
-
-                self.assertFalse(result)
-                mock_logger.error.assert_called_once()
-
-    def test_perform_deletion_directory_not_exists(self):
-        """Test deletion when directory doesn't exist"""
-        with patch(
-            "shutil.rmtree", side_effect=FileNotFoundError("No such file or directory")
-        ):
-            with patch(
-                "unclutter_directory.execution.delete_strategy.logger"
-            ) as mock_logger:
-                result = self.strategy.perform_deletion(
-                    self.directory_path, self.archive_path
-                )
-
-                self.assertFalse(result)
-                mock_logger.error.assert_called_once()
-
-    @patch("pathlib.Path.exists")
-    @patch("pathlib.Path.is_file")
-    @patch("pathlib.Path.rmdir")
-    def test_perform_deletion_rmdir_error(self, mock_rmdir, mock_is_file, mock_exists):
-        """Test handling rmdir failure"""
-        mock_exists.return_value = True
-        mock_is_file.return_value = False
-        mock_rmdir.side_effect = OSError("Permission denied")
-
-        with patch(
-            "unclutter_directory.execution.delete_strategy.logger"
-        ) as mock_logger:
-            result = self.strategy.perform_deletion(
-                self.directory_path, self.archive_path
-            )
-
-            self.assertFalse(result)
-            mock_logger.error.assert_called_once()
+def test_abstract_methods():
+    """Test that base class cannot be instantiated directly"""
+    with pytest.raises(TypeError):
+        DeleteConfirmationStrategy()
 
 
-class TestAutomaticDeleteStrategy(unittest.TestCase):
-    """Test AutomaticDeleteStrategy class"""
-
-    def setUp(self):
-        self.temp_dir = TemporaryDirectory()
-        self.archive_path = Path(self.temp_dir.name) / "test.zip"
-        self.directory_path = Path(self.temp_dir.name) / "test_dir"
-
-    def tearDown(self):
-        self.temp_dir.cleanup()
-
-    def test_should_delete_directory_always_delete_true_funcional(self):
-        """Test should_delete when always_delete is True"""
-        strategy = AutomaticDeleteStrategy(always_delete=True)
-        result = strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-        self.assertTrue(result)
-
-    def test_should_delete_directory_never_execute_mode(self):
-        """Test should_delete when never_execute mode"""
-        strategy = AutomaticDeleteStrategy(always_delete=False)
-        result = strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-        self.assertFalse(result)
-
-    def test_should_delete_directory_both_false(self):
-        """Test should_delete when both flags are False"""
-        strategy = AutomaticDeleteStrategy()
-        result = strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-        self.assertFalse(result)
+@pytest.fixture
+def interactive_setup(temp_paths):
+    archive_path, directory_path = temp_paths
+    strategy = InteractiveDeleteStrategy()
+    return strategy, directory_path, archive_path
 
 
-class TestDryRunDeleteStrategy(unittest.TestCase):
-    """Test DryRunDeleteStrategy class"""
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("builtins.input")
+def test_should_delete_directory_yes_response(
+    mock_input, mock_logger, interactive_setup
+):
+    """Test user responding 'y' to delete prompt"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_input.return_value = "y"
 
-    def setUp(self):
-        self.temp_dir = TemporaryDirectory()
-        self.archive_path = Path(self.temp_dir.name) / "test.zip"
-        self.directory_path = Path(self.temp_dir.name) / "test_dir"
+    result = strategy.should_delete_directory(directory_path, archive_path)
 
-    def tearDown(self):
-        self.temp_dir.cleanup()
-
-    def test_should_delete_directory_implementation(self):
-        """Test that should_delete_directory always returns False in dry run mode"""
-        strategy = DryRunDeleteStrategy()
-        result = strategy.should_delete_directory(
-            self.directory_path, self.archive_path
-        )
-        self.assertFalse(result)  # Dry run always returns False
-
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_perform_deletion_dry_run_true(self, mock_logger):
-        """Test deletion in dry run mode"""
-        strategy = DryRunDeleteStrategy()
-        result = strategy.perform_deletion(
-            self.directory_path, self.archive_path, dry_run=True
-        )
-
-        self.assertTrue(result)  # Always returns True in dry run
-        mock_logger.info.assert_called_once()
-
-    @patch("unclutter_directory.execution.delete_strategy.logger")
-    def test_perform_deletion_dry_run_false(self, mock_logger):
-        """Test deletion in normal mode (dry_run=False)"""
-        strategy = DryRunDeleteStrategy()
-        result = strategy.perform_deletion(
-            self.directory_path, self.archive_path, dry_run=False
-        )
-
-        self.assertTrue(result)  # Returns True even without actual deletion logic
-        mock_logger.info.assert_called_once()
+    assert result is True
+    mock_input.assert_called_once()
 
 
-class TestCreateDeleteStrategy(unittest.TestCase):
-    """Test create_delete_strategy factory function"""
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("builtins.input")
+def test_should_delete_directory_no_response(
+    mock_input, mock_logger, interactive_setup
+):
+    """Test user responding 'n' to delete prompt"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_input.return_value = "n"
 
-    def test_create_interactive_strategy_default(self):
-        """Test creating InteractiveDeleteStrategy by default"""
-        strategy = create_delete_strategy()
-        self.assertIsInstance(strategy, InteractiveDeleteStrategy)
+    result = strategy.should_delete_directory(directory_path, archive_path)
 
-    def test_create_interactive_strategy_explicit(self):
-        """Test creating InteractiveDeleteStrategy explicitly"""
-        strategy = create_delete_strategy(always_delete=False, never_delete=False)
-        self.assertIsInstance(strategy, InteractiveDeleteStrategy)
-
-    def test_create_dry_run_strategy(self):
-        """Test creating DryRunDeleteStrategy"""
-        strategy = create_delete_strategy(never_delete=True)
-        self.assertIsInstance(strategy, DryRunDeleteStrategy)
-
-    def test_create_automatic_strategy_always_delete(self):
-        """Test creating AutomaticDeleteStrategy with always_delete"""
-        strategy = create_delete_strategy(always_delete=True, never_delete=False)
-        self.assertIsInstance(strategy, AutomaticDeleteStrategy)
-        # Test that it behaves correctly with always_delete=True
-        self.temp_dir = TemporaryDirectory()
-        archive_path = Path(self.temp_dir.name) / "test.zip"
-        directory_path = Path(self.temp_dir.name) / "test_dir"
-        result = strategy.should_delete_directory(directory_path, archive_path)
-        self.assertTrue(result)
-        self.temp_dir.cleanup()
-
-    def test_create_automatic_strategy_never_delete(self):
-        """Test creating DryRunDeleteStrategy when never_delete is True"""
-        strategy = create_delete_strategy(always_delete=False, never_delete=True)
-        self.assertIsInstance(strategy, DryRunDeleteStrategy)
-
-    def test_create_automatic_strategy_both_flags(self):
-        """Test creating DryRunDeleteStrategy when never_delete overrides always_delete"""
-        strategy = create_delete_strategy(always_delete=True, never_delete=True)
-        self.assertIsInstance(strategy, DryRunDeleteStrategy)
+    assert result is False
+    mock_input.assert_called_once()
 
 
-if __name__ == "__main__":
-    unittest.main(failfast=True)
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("builtins.input")
+def test_should_delete_directory_empty_response(
+    mock_input, mock_logger, interactive_setup
+):
+    """Test user responding with empty string (defaults to no)"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_input.return_value = ""
+
+    result = strategy.should_delete_directory(directory_path, archive_path)
+
+    assert result is False
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("builtins.input")
+def test_should_delete_directory_invalid_response_then_valid(
+    mock_input, mock_logger, interactive_setup
+):
+    """Test invalid response followed by valid response"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_input.side_effect = ["invalid", "y"]
+
+    result = strategy.should_delete_directory(directory_path, archive_path)
+
+    assert result is True
+    assert mock_input.call_count == 2
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+def test_should_delete_directory_keyboard_interrupt(mock_logger, interactive_setup):
+    """Test handling KeyboardInterrupt during input"""
+    strategy, directory_path, archive_path = interactive_setup
+    with patch("builtins.input", side_effect=KeyboardInterrupt):
+        with pytest.raises(KeyboardInterrupt):
+            strategy.should_delete_directory(directory_path, archive_path)
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("shutil.rmtree")
+def test_perform_deletion_success(mock_rmtree, mock_logger, interactive_setup):
+    """Test successful directory deletion"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_rmtree.return_value = None
+
+    result = strategy.perform_deletion(directory_path, archive_path)
+
+    assert result is True
+    mock_rmtree.assert_called_once_with(directory_path)
+    mock_logger.info.assert_called_once()
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("shutil.rmtree")
+def test_perform_deletion_error(mock_rmtree, mock_logger, interactive_setup):
+    """Test handling deletion failure"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_rmtree.side_effect = OSError("Permission denied")
+
+    result = strategy.perform_deletion(directory_path, archive_path)
+
+    assert result is False
+    mock_logger.error.assert_called_once()
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("shutil.rmtree")
+def test_perform_deletion_directory_not_exists(
+    mock_rmtree, mock_logger, interactive_setup
+):
+    """Test deletion when directory doesn't exist"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_rmtree.side_effect = FileNotFoundError("No such file or directory")
+
+    result = strategy.perform_deletion(directory_path, archive_path)
+
+    assert result is False
+    mock_logger.error.assert_called_once()
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+@patch("shutil.rmtree")
+def test_perform_deletion_rmdir_error(mock_rmtree, mock_logger, interactive_setup):
+    """Test handling rmtree failure (adapted from original rmdir)"""
+    strategy, directory_path, archive_path = interactive_setup
+    mock_rmtree.side_effect = OSError("Permission denied")
+
+    result = strategy.perform_deletion(directory_path, archive_path)
+
+    assert result is False
+    mock_logger.error.assert_called_once()
+
+
+@pytest.fixture
+def auto_temp_paths():
+    with TemporaryDirectory() as temp_dir_str:
+        temp_dir = Path(temp_dir_str)
+        archive_path = temp_dir / "test.zip"
+        directory_path = temp_dir / "test_dir"
+        yield archive_path, directory_path
+
+
+def test_should_delete_directory_always_delete_true_funcional(auto_temp_paths):
+    """Test should_delete when always_delete is True"""
+    archive_path, directory_path = auto_temp_paths
+    strategy = AutomaticDeleteStrategy(always_delete=True)
+    result = strategy.should_delete_directory(directory_path, archive_path)
+    assert result is True
+
+
+def test_should_delete_directory_never_execute_mode(auto_temp_paths):
+    """Test should_delete when never_execute mode"""
+    archive_path, directory_path = auto_temp_paths
+    strategy = AutomaticDeleteStrategy(always_delete=False)
+    result = strategy.should_delete_directory(directory_path, archive_path)
+    assert result is False
+
+
+def test_should_delete_directory_both_false(auto_temp_paths):
+    """Test should_delete when both flags are False"""
+    archive_path, directory_path = auto_temp_paths
+    strategy = AutomaticDeleteStrategy()
+    result = strategy.should_delete_directory(directory_path, archive_path)
+    assert result is False
+
+
+@pytest.fixture
+def dry_temp_paths():
+    with TemporaryDirectory() as temp_dir_str:
+        temp_dir = Path(temp_dir_str)
+        archive_path = temp_dir / "test.zip"
+        directory_path = temp_dir / "test_dir"
+        yield archive_path, directory_path
+
+
+def test_should_delete_directory_implementation(dry_temp_paths):
+    """Test that should_delete_directory always returns False in dry run mode"""
+    archive_path, directory_path = dry_temp_paths
+    strategy = DryRunDeleteStrategy()
+    result = strategy.should_delete_directory(directory_path, archive_path)
+    assert result is False  # Dry run always returns False
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+def test_perform_deletion_dry_run_true(mock_logger, dry_temp_paths):
+    """Test deletion in dry run mode"""
+    archive_path, directory_path = dry_temp_paths
+    strategy = DryRunDeleteStrategy()
+    result = strategy.perform_deletion(directory_path, archive_path, dry_run=True)
+
+    assert result is True  # Always returns True in dry run
+    mock_logger.info.assert_called_once()
+
+
+@patch("unclutter_directory.execution.delete_strategy.logger")
+def test_perform_deletion_dry_run_false(mock_logger, dry_temp_paths):
+    """Test deletion in normal mode (dry_run=False)"""
+    archive_path, directory_path = dry_temp_paths
+    strategy = DryRunDeleteStrategy()
+    result = strategy.perform_deletion(directory_path, archive_path, dry_run=False)
+
+    assert result is True  # Returns True even without actual deletion logic
+    mock_logger.info.assert_called_once()
+
+
+def test_create_interactive_strategy_default():
+    """Test creating InteractiveDeleteStrategy by default"""
+    strategy = create_delete_strategy()
+    assert isinstance(strategy, InteractiveDeleteStrategy)
+
+
+def test_create_interactive_strategy_explicit():
+    """Test creating InteractiveDeleteStrategy explicitly"""
+    strategy = create_delete_strategy(always_delete=False, never_delete=False)
+    assert isinstance(strategy, InteractiveDeleteStrategy)
+
+
+def test_create_dry_run_strategy():
+    """Test creating DryRunDeleteStrategy"""
+    strategy = create_delete_strategy(never_delete=True)
+    assert isinstance(strategy, DryRunDeleteStrategy)
+
+
+@pytest.fixture
+def create_temp_paths():
+    with TemporaryDirectory() as temp_dir_str:
+        temp_dir = Path(temp_dir_str)
+        archive_path = temp_dir / "test.zip"
+        directory_path = temp_dir / "test_dir"
+        yield directory_path, archive_path
+
+
+def test_create_automatic_strategy_always_delete(create_temp_paths):
+    """Test creating AutomaticDeleteStrategy with always_delete"""
+    directory_path, archive_path = create_temp_paths
+    strategy = create_delete_strategy(always_delete=True, never_delete=False)
+    assert isinstance(strategy, AutomaticDeleteStrategy)
+    # Test that it behaves correctly with always_delete=True
+    result = strategy.should_delete_directory(directory_path, archive_path)
+    assert result is True
+
+
+def test_create_automatic_strategy_never_delete():
+    """Test creating DryRunDeleteStrategy when never_delete is True"""
+    strategy = create_delete_strategy(always_delete=False, never_delete=True)
+    assert isinstance(strategy, DryRunDeleteStrategy)
+
+
+def test_create_automatic_strategy_both_flags():
+    """Test creating DryRunDeleteStrategy when never_delete overrides always_delete"""
+    strategy = create_delete_strategy(always_delete=True, never_delete=True)
+    assert isinstance(strategy, DryRunDeleteStrategy)

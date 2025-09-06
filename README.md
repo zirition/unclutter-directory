@@ -395,7 +395,7 @@ pip install -e .[dev]  # Install with development dependencies
 ## Testing
 
 ```bash
-python -m unittest discover tests
+uv run pytest
 ```
 
 

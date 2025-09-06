@@ -58,5 +58,5 @@ jobs:
     - name: Install the project with dev dependencies
       run: uv sync --all-extras --dev
 
-    - name: Test with unittest
-      run: uv run -m unittest discover tests -v
+    - name: Test with pytest
+      run: uv run pytest
