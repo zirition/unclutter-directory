@@ -78,7 +78,9 @@ class OrganizeCommand:
                 return
 
             # Process files
-            processor = FileProcessor(matcher, strategy, self.rule_responses)
+            processor = FileProcessor(
+                matcher, strategy, self.rule_responses, self.config
+            )
             stats = processor.process_files(files, self.config.target_dir)
 
             # Log summary statistics

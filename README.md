@@ -352,6 +352,24 @@ The rules file is strictly validated. Common validation errors include:
 
 ## Advanced Usage 🔧
 
+## New Option: Automatic Deletion of Unpacked Directories
+
+The boolean option `delete_unpacked_on_match` (default `false`) allows automatic deletion of an identical unpacked directory after a successful action (e.g., `move`) on a compressed file.
+
+**Example in rules.yaml:**
+
+```yaml
+- name: 'Move ZIP and clean'
+  conditions:
+    end: '.zip'
+  action:
+    type: 'move'
+    target: 'Files/'
+    delete_unpacked_on_match: true
+```
+
+**Note:** This option respects flags such as `--dry-run` (simulates deletion) and `--always-delete` (skips confirmation prompts for deletion).
+
 ### Archive Handling
 
 Search inside compressed files:

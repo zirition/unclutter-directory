@@ -244,6 +244,15 @@ def validate_rules_file(rules: List) -> List[str]:
                 f"Rule #{rule_num}: 'is_directory' must be boolean, got {type(is_directory).__name__}"
             )
 
+        # Validate delete_unpacked_on_match
+        delete_unpacked_on_match = rule.get("delete_unpacked_on_match")
+        if delete_unpacked_on_match is not None and not isinstance(
+            delete_unpacked_on_match, bool
+        ):
+            errors.append(
+                f"Rule #{rule_num}: 'delete_unpacked_on_match' must be boolean, got {type(delete_unpacked_on_match).__name__}"
+            )
+
     if errors:
         logger.error("Rules validation failed with %d errors:", len(errors))
         for error in errors:

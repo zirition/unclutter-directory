@@ -121,3 +121,52 @@ def test_validate_rules_invalid(rule, expected_error):
     assert len(errors) > 0
     if expected_error:
         assert any(expected_error in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "rule, expected_error_count, expected_error_substring",
+    [
+        (
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "delete_unpacked_on_match": True,
+            },
+            0,
+            None,
+        ),
+        (
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "delete_unpacked_on_match": False,
+            },
+            0,
+            None,
+        ),
+        (
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+                "delete_unpacked_on_match": "string",
+            },
+            1,
+            "'delete_unpacked_on_match' must be boolean",
+        ),
+        (
+            {
+                "conditions": {"larger": "10MB"},
+                "action": {"type": "delete"},
+            },
+            0,
+            None,
+        ),
+    ],
+)
+def test_validate_rules_delete_unpacked_on_match(
+    rule, expected_error_count, expected_error_substring
+):
+    errors = validate_rules_file([rule])
+    assert len(errors) == expected_error_count
+    if expected_error_substring:
+        assert expected_error_substring in errors[0]

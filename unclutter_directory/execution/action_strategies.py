@@ -20,7 +20,7 @@ import shutil
 import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from ..commons import get_logger
 
@@ -58,7 +58,9 @@ class ActionStrategy(ABC):
         self._logger = logger_instance
 
     @abstractmethod
-    def execute(self, file_path: Path, parent_path: Path, target: str) -> None:
+    def execute(
+        self, file_path: Path, parent_path: Path, target: str
+    ) -> Optional[Path]:
         """Execute the specific action.
 
         Args:
@@ -138,7 +140,9 @@ class MoveStrategy(ActionStrategy):
         # to maintain original behavior
         return True
 
-    def execute(self, file_path: Path, parent_path: Path, target: str) -> None:
+    def execute(
+        self, file_path: Path, parent_path: Path, target: str
+    ) -> Optional[Path]:
         """Execute move operation.
 
         Args:
@@ -164,6 +168,7 @@ class MoveStrategy(ActionStrategy):
             # Perform the move
             shutil.move(str(file_path), str(target_path))
             self._logger.info(f"Moved {file_path} to {target_path}")
+            return target_path
 
         except Exception as e:
             self._logger.error(f"❌ Unexpected error processing {file_path}: {e}")
@@ -209,7 +214,9 @@ class DeleteStrategy(ActionStrategy):
         # For delete, we don't need target validation as it's not used
         return True
 
-    def execute(self, file_path: Path, parent_path: Path, target: str) -> None:
+    def execute(
+        self, file_path: Path, parent_path: Path, target: str
+    ) -> Optional[Path]:
         """Execute delete operation.
 
         Args:
@@ -229,6 +236,7 @@ class DeleteStrategy(ActionStrategy):
                 # Delete single file
                 file_path.unlink()
                 self._logger.info(f"Deleted file: {file_path}")
+                return None
 
         except Exception as e:
             self._logger.error(f"❌ Error deleting {file_path}: {e}")
@@ -283,7 +291,9 @@ class CompressStrategy(ActionStrategy):
 
         return True
 
-    def execute(self, file_path: Path, parent_path: Path, target: str) -> None:
+    def execute(
+        self, file_path: Path, parent_path: Path, target: str
+    ) -> Optional[Path]:
         """Execute compression operation.
 
         Args:
@@ -300,7 +310,7 @@ class CompressStrategy(ActionStrategy):
             and file_path.suffix.lower() in self.COMPRESSED_EXTENSIONS
         ):
             self._logger.info(f"Skipping compression for archive file: {file_path}")
-            return
+            return None
 
         try:
             target_dir = self._get_target_directory(target, parent_path)
@@ -325,6 +335,7 @@ class CompressStrategy(ActionStrategy):
                 file_path.unlink()
 
             self._logger.info(f"Compressed {file_path} to {target_path}")
+            return target_path
 
         except Exception as e:
             self._logger.error(f"❌ Error compressing {file_path}: {e}")

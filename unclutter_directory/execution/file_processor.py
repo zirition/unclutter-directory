@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List
 
+from ..config.organize_config import OrganizeConfig
 from ..entities.file import File
 from ..file_operations.file_matcher import FileMatcher
 from .action_executor import ActionExecutor
@@ -18,18 +19,20 @@ class FileProcessor:
         matcher: FileMatcher,
         strategy: ExecutionStrategy,
         rule_responses: RuleResponses,
+        config: OrganizeConfig,
     ):
         """
         Initialize file processor
-
         Args:
             matcher: FileMatcher instance for rule matching
             strategy: ExecutionStrategy for determining execution behavior
             rule_responses: Dictionary to track user responses for rules
+            config: OrganizeConfig instance
         """
         self.matcher = matcher
         self.strategy = strategy
         self.rule_responses = rule_responses
+        self.config = config
 
     def process_file(self, file_path: Path, target_dir: Path) -> bool:
         """
@@ -64,8 +67,8 @@ class FileProcessor:
 
         # Execute action if determined
         if should_execute:
-            executor = ActionExecutor(action)
-            executor.execute_action(file_path, target_dir)
+            executor = ActionExecutor(action, strategy_factory=None)
+            executor.execute_action(file_path, target_dir, rule, self.config)
 
         return True
 

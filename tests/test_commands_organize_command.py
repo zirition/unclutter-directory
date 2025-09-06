@@ -1,6 +1,8 @@
 import tempfile
+import textwrap
 from pathlib import Path
 from unittest.mock import Mock, call, patch
+from zipfile import ZipFile
 
 import pytest
 
@@ -41,6 +43,13 @@ def mock_factory():
 @pytest.fixture
 def mock_processor():
     return Mock()
+
+
+@pytest.fixture
+def source_dir(temp_path):
+    source_dir = temp_path / "source"
+    source_dir.mkdir()
+    return source_dir
 
 
 def test_init(mock_config):
@@ -187,7 +196,7 @@ def test_process_files_successful_processing(
     mock_matcher = mock_factory.create_file_matcher.return_value
     mock_strategy = mock_factory.create_execution_strategy.return_value
     mock_processor_cls.assert_called_once_with(
-        mock_matcher, mock_strategy, command.rule_responses
+        mock_matcher, mock_strategy, command.rule_responses, mock_config
     )
     mock_processor.process_files.assert_called_once_with(
         test_files, mock_config.target_dir
@@ -302,3 +311,118 @@ def test_execute_generic_exception(mock_setup_logging, mock_logger, mock_config)
     mock_logger.error.assert_called_once_with(
         f"Unexpected error during organize operation: {test_exception}"
     )
+
+
+def test_organize_with_delete_unpacked_always_delete(temp_path, caplog):
+    """Test organize command with delete_unpacked_on_match and always_delete flag"""
+    caplog.set_level(0)  # Capture all logs
+    # Use temp_path as the working directory where files are created and processed
+    target_dir = temp_path
+
+    # Create unpacked directory
+    unpacked_dir = target_dir / "test"
+    unpacked_dir.mkdir()
+    (unpacked_dir / "file1.txt").write_text("content")
+    (unpacked_dir / "file2.txt").write_text("content")
+
+    # Create zip archive with same content
+    zip_path = target_dir / "test.zip"
+    with ZipFile(zip_path, "w") as z:
+        for f in unpacked_dir.iterdir():
+            z.write(str(f), f.name)
+
+    assert zip_path.exists()
+
+    # Create rules file
+    rules_file = target_dir / "rules.yaml"
+    rules_file.write_text(textwrap.dedent('''
+- name: "Test rule"
+  conditions:
+    end: ".zip"
+  action:
+    type: move
+    target: "archives"
+  delete_unpacked_on_match: true
+'''))
+
+    # Create config
+    config = OrganizeConfig(
+        target_dir=target_dir,
+        rules_file=str(rules_file),
+        dry_run=False,
+        always_delete=True,
+        quiet=False,
+        never_delete=False,
+        include_hidden=False,
+    )
+
+    # Execute command
+    command = OrganizeCommand(config)
+    command.execute()
+
+    # Assert zip was moved
+    expected_zip = target_dir / "archives" / "test.zip"
+    assert expected_zip.exists()
+    assert not zip_path.exists()
+
+    # Assert unpacked directory was deleted
+    assert not unpacked_dir.exists()
+
+    # Assert logs for cleaning
+    assert "Cleaning unpacked directory for preexisting archive" in caplog.text
+
+
+def test_organize_with_delete_unpacked_dry_run(temp_path, caplog):
+    """Test organize command with delete_unpacked_on_match in dry-run mode"""
+    caplog.set_level(0)  # Capture all logs
+    # Use temp_path as the working directory where files are created and processed
+    target_dir = temp_path
+
+    # Create unpacked directory
+    unpacked_dir = target_dir / "test"
+    unpacked_dir.mkdir()
+    (unpacked_dir / "file1.txt").write_text("content")
+    (unpacked_dir / "file2.txt").write_text("content")
+
+    # Create zip archive with same content
+    zip_path = target_dir / "test.zip"
+    with ZipFile(zip_path, "w") as z:
+        for f in unpacked_dir.iterdir():
+            z.write(str(f), f.name)
+
+    assert zip_path.exists()
+
+    # Create rules file
+    rules_file = target_dir / "rules.yaml"
+    rules_file.write_text(textwrap.dedent('''
+- name: "Test rule"
+  conditions:
+    end: ".zip"
+  action:
+    type: move
+    target: "archives"
+  delete_unpacked_on_match: true
+'''))
+
+    # Create config with dry_run
+    config = OrganizeConfig(
+        target_dir=target_dir,
+        rules_file=str(rules_file),
+        dry_run=True,
+        always_delete=False,
+        quiet=False,
+        never_delete=False,
+        include_hidden=False,
+    )
+
+    # Execute command
+    command = OrganizeCommand(config)
+    command.execute()
+
+    # Assert nothing was moved or deleted
+    assert zip_path.exists()
+    assert unpacked_dir.exists()
+
+    # Assert logs indicate planned actions but no execution
+    assert "[DRY RUN] Would execute" in caplog.text
+    assert "Cleaning unpacked directory" not in caplog.text

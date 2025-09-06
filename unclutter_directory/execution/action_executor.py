@@ -18,7 +18,12 @@ from typing import Dict, List, Optional
 
 from unclutter_directory.commons import get_logger, validations
 
+from ..commons.aliases import Rule
+from ..config.organize_config import OrganizeConfig
+from ..entities.compressed_archive import get_archive_manager
+from ..entities.file import File
 from .action_strategy_factory import ActionStrategyFactory
+from .unpacked_directory_cleaner import UnpackedDirectoryCleaner
 
 logger = get_logger()
 
@@ -67,24 +72,26 @@ class ActionExecutor:
         """
         return self.strategy_factory.get_available_actions()
 
-    def execute_action(self, file_path: Path, parent_path: Path) -> None:
+    def execute_action(
+        self, file_path: Path, parent_path: Path, rule: Rule, config: OrganizeConfig
+    ) -> Optional[Path]:
         """Execute the configured action on a file with validation and error handling.
-
         Main entry point for performing file organization actions. Uses Strategy pattern
         to delegate execution to appropriate strategy based on action type.
-
         Args:
             file_path (Path): Path of the file or directory to process
             parent_path (Path): Base directory path for target resolution and relative calculations
-
+            rule (Rule): The rule that matched this file
+            config (OrganizeConfig): Configuration for the organize command
         Supported Actions:
             - move: Requires 'target' parameter, moves file to specified location
             - delete: No additional parameters required, removes file/directory
             - compress: Requires 'target' parameter, archives file/directory to ZIP
-
         Note:
             Invalid action types or validation failures are logged as warnings
             and the action is skipped without raising exceptions.
+        Returns:
+            Optional[Path]: The final path after action execution, or None if action failed or was skipped
         """
         action_type = self.action.get("type")
         target = self.action.get("target", "")
@@ -92,10 +99,10 @@ class ActionExecutor:
         # Validate action structure using centralized VALID_ACTIONS
         if not action_type or action_type not in validations.VALID_ACTIONS:
             logger.warning(f"Invalid action type for file {file_path}")
-            return
+            return None
         if action_type in ["move", "compress"] and not target:
             logger.warning(f"Missing target for {action_type} action on {file_path}")
-            return
+            return None
 
         # Create strategy instance
         strategy = self.strategy_factory.create_strategy(action_type, logger)
@@ -103,10 +110,24 @@ class ActionExecutor:
             logger.warning(
                 f"Unsupported action type '{action_type}' for file {file_path}"
             )
-            return
+            return None
+
+        # Pre-execute cleanup check
+        should_clean = rule.get("delete_unpacked_on_match", False)
+        manager = get_archive_manager(File.from_path(file_path))
+        is_preexisting_archive = not file_path.is_dir() and manager is not None
 
         # Execute action using strategy
         try:
-            strategy.execute(file_path, parent_path, target)
+            final_path = strategy.execute(file_path, parent_path, target)
+            if should_clean and is_preexisting_archive and final_path is not None:
+                try:
+                    logger.info(f"Cleaning unpacked directory for preexisting archive {file_path}")
+                    cleaner = UnpackedDirectoryCleaner(config)
+                    cleaner.clean(file_path, final_path)
+                except Exception as clean_e:
+                    logger.error(f"Error during unpacked directory cleanup for {file_path}: {clean_e}")
+            return final_path
         except Exception as e:
             logger.error(f"❌ Unexpected error processing {file_path}: {e}")
+            return None
