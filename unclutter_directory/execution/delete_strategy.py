@@ -68,11 +68,15 @@ class InteractiveDeleteStrategy(DeleteConfirmationStrategy):
     def __init__(self):
         """Initialize interactive delete strategy."""
         self.confirmation_strategy = InteractiveConfirmationStrategy(
-            prompt_template="Delete duplicate directory '{context}'? [Y(es)/N(o)]: ",
-            valid_responses={"y", "n"},
+            prompt_template="Delete duplicate directory '{context}'? [Y(es)/N(o)/A(ll)/Never]: ",
+            valid_responses={"y", "n", "a", "never"},
             default_response="n",
-            caching_enabled=False,
+            caching_enabled=True,
+            responses_dict={},
         )
+        self.responses_dict = {}
+        # Track if we've received an 'all' or 'never' response
+        self.global_response = None
 
     def should_delete_directory(self, directory_path: Path, archive_path: Path) -> bool:
         """
@@ -85,8 +89,28 @@ class InteractiveDeleteStrategy(DeleteConfirmationStrategy):
         Returns:
             True if user confirms deletion, False otherwise
         """
+        # Use our responses_dict for caching
+        self.confirmation_strategy.responses_dict = self.responses_dict
+
         context_info = f"'{directory_path.name}' (identical to '{archive_path.name}')"
-        return self.confirmation_strategy.get_confirmation(context_info)
+
+        # If we already have a global response (all/never), use it
+        if self.global_response is not None:
+            return self.global_response
+
+        result = self.confirmation_strategy.get_confirmation(
+            context_info, cache_key=str(directory_path.parent)
+        )
+
+        # If user selected 'all' or 'never', store it for future calls
+        if str(directory_path.parent) in self.responses_dict:
+            cached = self.responses_dict[str(directory_path.parent)]
+            if cached == "a":  # Apply to all
+                self.global_response = True
+            elif cached == "never":
+                self.global_response = False
+
+        return result
 
 
 class AutomaticDeleteStrategy(DeleteConfirmationStrategy):

@@ -11,4 +11,3 @@ wheels/
 htmlcov/
 .coverage
 uv.lock
-.roo/
