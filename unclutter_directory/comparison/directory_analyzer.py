@@ -50,6 +50,29 @@ class DirectoryAnalyzer:
                 if not self.include_hidden:
                     dirs[:] = [d for d in dirs if not d.startswith(".")]
 
+                # Create relative path for current directory
+                relative_root = root_path.relative_to(directory_path)
+
+                # Add directory entries (similar to how ZIP stores them)
+                # But skip the root directory itself (empty relative path)
+                if str(relative_root) != ".":
+                    try:
+                        # Get directory stats
+                        stat = root_path.stat()
+
+                        # Create File object for directory
+                        dir_obj = File(
+                            path=root_path.parent,  # Parent of the directory
+                            name=str(relative_root)
+                            + "/",  # Directory name with trailing slash
+                            date=int(stat.st_mtime),  # Modification time
+                            size=0,  # Directories have size 0 in ZIP format
+                        )
+
+                        all_files.append(dir_obj)
+                    except OSError as e:
+                        logger.warning(f"Could not access directory {root_path}: {e}")
+
                 # Process each file
                 for file_name in files:
                     # Skip hidden files if not included

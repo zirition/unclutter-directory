@@ -17,7 +17,7 @@ class DeleteUnpackedConfig:
     """Configuration for the delete-unpacked operation."""
 
     target_dir: Path
-    dry_run: bool = True  # Default to True for safety
+    dry_run: bool = False  # Default to False for interactive mode
     always_delete: bool = False
     never_delete: bool = False
     include_hidden: bool = False
@@ -34,9 +34,6 @@ class DeleteUnpackedConfig:
 
         if not self.target_dir.is_dir():
             errors.append(f"Target path is not a directory: {self.target_dir}")
-
-        if not self.target_dir.is_absolute():
-            errors.append("Target directory path must be absolute")
 
         # Validate conflicting flags
         if self.always_delete and self.never_delete:

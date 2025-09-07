@@ -65,8 +65,12 @@ class File:
             return datetime(year, month, day, hour, minute, second).timestamp()
         except ValueError as e:
             # Raise the exception instead of fallback
-            logger.error(f"Invalid date after normalization: {year}-{month}-{day} {hour}:{minute}:{second}. Original error: {e}")
-            raise ValueError(f"Unable to create valid datetime after normalization: {year}-{month}-{day} {hour}:{minute}:{second}") from e
+            logger.error(
+                f"Invalid date after normalization: {year}-{month}-{day} {hour}:{minute}:{second}. Original error: {e}"
+            )
+            raise ValueError(
+                f"Unable to create valid datetime after normalization: {year}-{month}-{day} {hour}:{minute}:{second}"
+            ) from e
 
     @staticmethod
     def from_path(file_path: Path):

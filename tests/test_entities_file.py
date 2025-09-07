@@ -218,11 +218,16 @@ def test_date_tuple_normalization(
     # Assert timestamp matches (with float tolerance)
     assert abs(file_obj.date - expected_timestamp) < 1e-6
 
+
 @pytest.mark.parametrize(
     "date_tuple",
     [
         # Extreme overflow to year >9999
-        (9999, 12, 32),  # Day 32 in Dec 9999 overflows to Jan 10000, which is invalid for datetime
+        (
+            9999,
+            12,
+            32,
+        ),  # Day 32 in Dec 9999 overflows to Jan 10000, which is invalid for datetime
     ],
 )
 def test_date_tuple_normalization_raises_value_error(temp_dir, date_tuple):

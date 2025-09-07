@@ -77,7 +77,7 @@ def organize(
         sys.exit(1)
 
 
-@cli.command(aliases=["check", "val"])
+@cli.command(aliases=["check"])
 @click.argument("rules_file", type=click.Path(exists=True, dir_okay=False))
 def validate(rules_file: str) -> None:
     """
@@ -114,7 +114,7 @@ def validate(rules_file: str) -> None:
         sys.exit(1)
 
 
-@cli.command("delete-unpacked", aliases=["del-unpacked", "clean-archives"])
+@cli.command("delete-unpacked", aliases=["remove-unpacked", "clean-archives"])
 @click.argument(
     "target_dir", type=click.Path(exists=True, file_okay=False, path_type=Path)
 )
@@ -164,10 +164,9 @@ def delete_unpacked(
             logger.error("--always-delete and --never-delete are mutually exclusive")
             sys.exit(1)
 
-        # If no flags specified, default to dry-run
+        # If no flags specified, default to interactive mode
         if not any([dry_run, always_delete, never_delete]):
-            dry_run = True
-            logger.info("No deletion flag specified, running in dry-run mode")
+            logger.info("No deletion flag specified, running in interactive mode")
 
         # Create configuration
         config = DeleteUnpackedConfig(

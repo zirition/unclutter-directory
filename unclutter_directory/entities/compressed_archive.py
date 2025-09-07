@@ -73,6 +73,9 @@ class SevenZipArchive(CompressedArchive):
                 files = []
                 for name in szf.getnames():
                     file_info = szf.getinfo(name)
+                    # Add trailing slash to directory names for consistency with ZIP/RAR
+                    if file_info.is_directory and not name.endswith("/"):
+                        name = name + "/"
                     files.append(
                         File(
                             file.path,
