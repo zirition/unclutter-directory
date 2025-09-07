@@ -1,4 +1,4 @@
-- name: "Process Ubuntu ISO files using all the posible conditions"
+- name: "Process Ubuntu ISO files using all the possible conditions"
   conditions:
     start: "Ubuntu"  # Match files starting with "Ubuntu"
     contain: "buntu" # Match files containing "buntu"

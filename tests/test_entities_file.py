@@ -161,3 +161,76 @@ def test_large_directory_size(temp_dir):
     dir_obj = File.from_path(test_dir)
     assert dir_obj.size == 0  # Todos vacíos
     assert dir_obj.is_directory
+
+
+@pytest.mark.parametrize(
+    "date_tuple, expected_year, expected_month, expected_day, expected_hour, expected_minute, expected_second",
+    [
+        # Valid case
+        ((2023, 10, 15, 14, 30, 45), 2023, 10, 15, 14, 30, 45),
+        # Underflow: day 0 in January -> 31 Dec previous year
+        ((2023, 1, 0), 2022, 12, 31, 0, 0, 0),
+        # Underflow with negative: day -1 in January -> 30 Dec previous year
+        ((2023, 1, -1), 2022, 12, 30, 0, 0, 0),
+        # Overflow: day 32 in April (30 days) -> 2 May
+        ((2023, 4, 32), 2023, 5, 2, 0, 0, 0),
+        # Overflow in non-leap February: day 30 -> 2 March (Feb 28 days)
+        ((2023, 2, 30), 2023, 3, 2, 0, 0, 0),
+        # Overflow in leap February: day 30 -> 1 March (Feb 29 days)
+        ((2024, 2, 30), 2024, 3, 1, 0, 0, 0),
+        # Clamping: month 0 -> 1, year 0 -> 1970, hour 25 -> 23, etc.
+        ((0, 0, 1, 25, 60, 60), 1970, 1, 1, 23, 59, 59),
+        # Multiple underflow: day -30 in January -> 2 Dec previous year? Wait, logic gives Dec 1
+        ((2023, 1, -30), 2022, 12, 1, 0, 0, 0),
+        # Multiple overflow: day 100 in January -> April 10 same year
+        ((2023, 1, 100), 2023, 4, 10, 0, 0, 0),
+    ],
+)
+def test_date_tuple_normalization(
+    temp_dir,
+    date_tuple,
+    expected_year,
+    expected_month,
+    expected_day,
+    expected_hour,
+    expected_minute,
+    expected_second,
+):
+    """Tests for date tuple normalization in the File constructor."""
+    # Create a dummy path
+    test_path = temp_dir / "dummy.txt"
+    test_path.touch()
+
+    # Create File with date_tuple
+    file_obj = File(test_path, "dummy.txt", date_tuple, 0)
+
+    # Get expected date
+    expected_date = datetime(
+        expected_year,
+        expected_month,
+        expected_day,
+        expected_hour,
+        expected_minute,
+        expected_second,
+    )
+    expected_timestamp = expected_date.timestamp()
+
+    # Assert timestamp matches (with float tolerance)
+    assert abs(file_obj.date - expected_timestamp) < 1e-6
+
+@pytest.mark.parametrize(
+    "date_tuple",
+    [
+        # Extreme overflow to year >9999
+        (9999, 12, 32),  # Day 32 in Dec 9999 overflows to Jan 10000, which is invalid for datetime
+    ],
+)
+def test_date_tuple_normalization_raises_value_error(temp_dir, date_tuple):
+    """Test that ValueError is raised for dates that cannot be normalized due to year limits."""
+    # Create a dummy path
+    test_path = temp_dir / "dummy.txt"
+    test_path.touch()
+
+    # Expect ValueError to be raised
+    with pytest.raises(ValueError):
+        File(test_path, "dummy.txt", date_tuple, 0)

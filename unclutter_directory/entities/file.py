@@ -1,3 +1,4 @@
+import calendar
 from datetime import datetime
 from pathlib import Path
 
@@ -13,13 +14,20 @@ class File:
         self.path = path
         self.name = name
         if isinstance(date, tuple):
-            date = self._validate_and_correct_date_tuple(date)
+            date = self._normalize_date_tuple(date)
         self.date = date
         self.size = size
         self.is_directory = is_directory
 
     @staticmethod
-    def _validate_and_correct_date_tuple(date_tuple):
+    def _normalize_date_tuple(date_tuple):
+        """Normalize a date tuple by correcting invalid components, focusing on days outside the month range.
+
+        - Underflow (day < 1): Subtract from previous month (e.g., day 0 in January -> day 31 of previous December).
+        - Overflow (day > days in month): Add to next month (e.g., day 32 in April -> day 2 of May).
+        - Clamp other components to valid ranges.
+        - Return timestamp of the normalized date.
+        """
         year = date_tuple[0]
         month = date_tuple[1] if len(date_tuple) > 1 else 1
         day = date_tuple[2] if len(date_tuple) > 2 else 1
@@ -27,17 +35,38 @@ class File:
         minute = date_tuple[4] if len(date_tuple) > 4 else 0
         second = date_tuple[5] if len(date_tuple) > 5 else 0
 
-        year = max(1, min(year, 9999))
+        # Clamp components except day (will be normalized separately)
+        year = max(1970, min(year, 9999))  # Clamp to safe range for timestamp
         month = max(1, min(month, 12))
-        day = max(1, min(day, 31))
         hour = max(0, min(hour, 23))
         minute = max(0, min(minute, 59))
         second = max(0, min(second, 59))
 
+        # Normalize day handling underflow and overflow
+        while day < 1:
+            month -= 1
+            if month == 0:
+                month = 12
+                year -= 1
+                year = max(1970, year)  # Ensure year doesn't go below safe range
+            days_in_prev_month = calendar.monthrange(year, month)[1]
+            day += days_in_prev_month
+
+        while day > calendar.monthrange(year, month)[1]:
+            days_in_month = calendar.monthrange(year, month)[1]
+            day -= days_in_month
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+
+        # Create and return timestamp
         try:
             return datetime(year, month, day, hour, minute, second).timestamp()
-        except ValueError:
-            return datetime(year, month, 28, hour, minute, second).timestamp()
+        except ValueError as e:
+            # Raise the exception instead of fallback
+            logger.error(f"Invalid date after normalization: {year}-{month}-{day} {hour}:{minute}:{second}. Original error: {e}")
+            raise ValueError(f"Unable to create valid datetime after normalization: {year}-{month}-{day} {hour}:{minute}:{second}") from e
 
     @staticmethod
     def from_path(file_path: Path):

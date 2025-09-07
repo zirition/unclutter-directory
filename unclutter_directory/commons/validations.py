@@ -6,7 +6,7 @@ from unclutter_directory.commons.parsers import parse_size, parse_time
 
 # Type aliases
 Rules = List[dict]
-# Constantes para validación
+# Constants for validation
 VALID_CONDITIONS = {
     "start",
     "end",
