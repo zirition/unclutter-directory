@@ -31,13 +31,15 @@ def parse_size(size_str: str) -> int:
     try:
         # Strip whitespace and match pattern
         size_str = size_str.strip()
-        match = re.fullmatch(r"(\d+)\s*([KMG]?B?)?$", size_str, re.IGNORECASE)
+        match = re.fullmatch(r"(\d+(\.\d+)?)\s*([KMG]?B?)?$", size_str, re.IGNORECASE)
 
         if not match:
             raise ValueError(f"Invalid size format: '{size_str}'")
 
-        value_str, unit = match.groups()
-        value = int(value_str)
+        groups = match.groups()
+        value_str = groups[0]
+        unit = groups[2]  # Third group contains the unit
+        value = float(value_str)
 
         # Normalize unit
         if unit:
@@ -55,7 +57,7 @@ def parse_size(size_str: str) -> int:
         if unit not in SIZE_UNITS:
             raise ValueError(f"Unsupported size unit: '{unit}'")
 
-        return value * SIZE_UNITS[unit]
+        return int(value * SIZE_UNITS[unit])
 
     except (ValueError, TypeError) as e:
         raise ValueError(f"Failed to parse size '{size_str}': {str(e)}") from e
@@ -88,13 +90,15 @@ def parse_time(time_str: str) -> int:
     """
     try:
         time_str = time_str.strip()
-        match = re.fullmatch(r"(\d+)\s*([smhdw])?$", time_str, re.IGNORECASE)
+        match = re.fullmatch(r"(\d+(\.\d+)?)\s*([smhdw])?$", time_str, re.IGNORECASE)
 
         if not match:
             raise ValueError(f"Invalid time format: '{time_str}'")
 
-        value_str, unit = match.groups()
-        value = int(value_str)
+        groups = match.groups()
+        value_str = groups[0]
+        unit = groups[2]  # Third group contains the unit
+        value = float(value_str)
 
         # Default to seconds if no unit
         unit = unit.lower() if unit else "s"
@@ -102,7 +106,7 @@ def parse_time(time_str: str) -> int:
         if unit not in TIME_UNITS:
             raise ValueError(f"Unsupported time unit: '{unit}'")
 
-        return value * TIME_UNITS[unit]
+        return int(value * TIME_UNITS[unit])
 
     except (ValueError, TypeError) as e:
         raise ValueError(f"Failed to parse time '{time_str}': {str(e)}") from e

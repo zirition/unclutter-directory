@@ -13,15 +13,27 @@ from unclutter_directory.commons.validations import validate_rules_file
         ("1024", 1024),
         ("1 KB", 1024),
         ("1kb", 1024),
+        ("1.5GB", 1610612736),  # 1.5 * 1024**3
+        ("0.5MB", 524288),  # 0.5 * 1024**2
+        ("2.5KB", 2560),  # 2.5 * 1024
+        ("0.25B", 0),
     ],
 )
 def test_parse_size_valid(input_str, expected):
     assert parse_size(input_str) == expected
 
 
-def test_parse_size_invalid():
+@pytest.mark.parametrize(
+    "input_str",
+    [
+        "invalid",
+        "1.5.5GB",  # invalid float
+        "1..5GB",  # invalid float
+    ],
+)
+def test_parse_size_invalid(input_str):
     with pytest.raises(ValueError):
-        parse_size("invalid")
+        parse_size(input_str)
 
 
 @pytest.mark.parametrize(
@@ -33,15 +45,26 @@ def test_parse_size_invalid():
         ("1d", 86400),
         ("60", 60),
         ("1 h", 3600),
+        ("0.5h", 1800),  # 0.5 * 3600
+        ("1.5d", 129600),  # 1.5 * 86400
+        ("0.25m", 15),  # 0.25 * 60
     ],
 )
 def test_parse_time_valid(input_str, expected):
     assert parse_time(input_str) == expected
 
 
-def test_parse_time_invalid():
+@pytest.mark.parametrize(
+    "input_str",
+    [
+        "invalid",
+        "0.5.5h",  # invalid float
+        "1..5d",  # invalid float
+    ],
+)
+def test_parse_time_invalid(input_str):
     with pytest.raises(ValueError):
-        parse_time("invalid")
+        parse_time(input_str)
 
 
 valid_rules = [

@@ -335,7 +335,8 @@ def test_organize_with_delete_unpacked_always_delete(temp_path, caplog):
 
     # Create rules file
     rules_file = target_dir / "rules.yaml"
-    rules_file.write_text(textwrap.dedent('''
+    rules_file.write_text(
+        textwrap.dedent("""
 - name: "Test rule"
   conditions:
     end: ".zip"
@@ -343,7 +344,8 @@ def test_organize_with_delete_unpacked_always_delete(temp_path, caplog):
     type: move
     target: "archives"
   delete_unpacked_on_match: true
-'''))
+""")
+    )
 
     # Create config
     config = OrganizeConfig(
@@ -394,7 +396,8 @@ def test_organize_with_delete_unpacked_dry_run(temp_path, caplog):
 
     # Create rules file
     rules_file = target_dir / "rules.yaml"
-    rules_file.write_text(textwrap.dedent('''
+    rules_file.write_text(
+        textwrap.dedent("""
 - name: "Test rule"
   conditions:
     end: ".zip"
@@ -402,7 +405,8 @@ def test_organize_with_delete_unpacked_dry_run(temp_path, caplog):
     type: move
     target: "archives"
   delete_unpacked_on_match: true
-'''))
+""")
+    )
 
     # Create config with dry_run
     config = OrganizeConfig(

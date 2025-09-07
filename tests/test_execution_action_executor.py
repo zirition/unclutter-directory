@@ -4,10 +4,10 @@ import tempfile
 import zipfile
 from pathlib import Path
 from typing import List
+from unittest.mock import Mock
 
 import pytest
 
-from unittest.mock import Mock
 from unclutter_directory.config.organize_config import OrganizeConfig
 from unclutter_directory.execution.action_executor import ActionExecutor
 
@@ -37,7 +37,12 @@ def test_move_basic(temp_dir_setup):
     target = temp_dir / "target"
     action = {"type": "move", "target": str(target)}
 
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert isinstance(result, Path)
 
     moved_file = target / test_file.name
@@ -53,7 +58,12 @@ def test_move_with_conflict(temp_dir_setup):
     (target / test_file.name).touch()  # Existing file
 
     action = {"type": "move", "target": str(target)}
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert isinstance(result, Path)
 
     moved_file = target / "test_file_1.txt"
@@ -67,7 +77,12 @@ def test_move_absolute_path(temp_dir_setup):
     target = temp_dir / "absolute_target"
     action = {"type": "move", "target": str(target.resolve())}
 
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert isinstance(result, Path)
 
     assert (target / test_file.name).exists()
@@ -79,7 +94,12 @@ def test_move_nested_directories(temp_dir_setup):
     target = temp_dir / "nested/target/directory"
     action = {"type": "move", "target": str(target)}
 
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert isinstance(result, Path)
 
     assert (target / test_file.name).exists()
@@ -90,7 +110,12 @@ def test_delete_basic(temp_dir_setup):
     temp_dir, test_file = temp_dir_setup
     action = {"type": "delete"}
 
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert result is None
 
     assert not test_file.exists()
@@ -102,7 +127,12 @@ def test_compress_basic(temp_dir_setup):
     target = temp_dir / "compressed"
     action = {"type": "compress", "target": str(target)}
 
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert isinstance(result, Path)
 
     zip_file = target / "test_file.zip"
@@ -118,7 +148,12 @@ def test_compress_with_conflict(temp_dir_setup):
     (target / "test_file.zip").touch()  # Existing file
 
     action = {"type": "compress", "target": str(target)}
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert isinstance(result, Path)
 
     assert (target / "test_file_1.zip").exists()
@@ -132,7 +167,10 @@ def test_compress_content_validation(temp_dir_setup):
     test_file.write_text(content)
 
     result = ActionExecutor({"type": "compress", "target": str(target)}).execute_action(
-        test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
 
@@ -155,7 +193,12 @@ def test_compress_forbidden_extensions(temp_dir_setup, caplog):
         file.touch()
         result = ActionExecutor(
             {"type": "compress", "target": str(temp_dir)}
-        ).execute_action(file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+        ).execute_action(
+            file,
+            temp_dir,
+            {"delete_unpacked_on_match": False},
+            Mock(spec=OrganizeConfig),
+        )
         assert result is None  # Skipped, so None
         assert "Skipping compression for archive file" in caplog.text
         assert not (temp_dir / (file.name + ".zip")).exists()
@@ -168,7 +211,12 @@ def test_compress_non_existent_directory(temp_dir_setup):
     target = temp_dir / "non/existent/directory"
     action = {"type": "compress", "target": str(target)}
 
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert isinstance(result, Path)
 
     assert (target / "test_file.zip").exists()
@@ -191,7 +239,12 @@ def test_invalid_action(temp_dir_setup, caplog):
     ]
     caplog.set_level(logging.WARNING)
     for action, expected_msg in zip(test_cases, expected_log_messages):
-        result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+        result = ActionExecutor(action).execute_action(
+            test_file,
+            temp_dir,
+            {"delete_unpacked_on_match": False},
+            Mock(spec=OrganizeConfig),
+        )
         assert result is None
         assert expected_msg in caplog.text, (
             f"Expected message '{expected_msg}' not found in logs"
@@ -206,7 +259,12 @@ def test_move_error_handling(temp_dir_setup, mocker, caplog):
     mock_move.side_effect = Exception("Simulated error")
     action = {"type": "move", "target": str(temp_dir / "target")}
 
-    result = ActionExecutor(action).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor(action).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert result is None
     assert "Unexpected error processing" in caplog.text
 
@@ -219,7 +277,12 @@ def test_delete_error_handling(temp_dir_setup, monkeypatch, caplog):
         raise Exception("Simulated error")
 
     monkeypatch.setattr(Path, "unlink", mock_unlink)
-    result = ActionExecutor({"type": "delete"}).execute_action(test_file, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor({"type": "delete"}).execute_action(
+        test_file,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert result is None
     assert "Error deleting " in caplog.text
 
@@ -230,7 +293,12 @@ def test_delete_directory(temp_dir_setup):
     test_dir = temp_dir / "test_dir"
     create_test_structure(temp_dir, ["test_dir/file1.txt", "test_dir/subdir/file2.txt"])
 
-    result = ActionExecutor({"type": "delete"}).execute_action(test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig))
+    result = ActionExecutor({"type": "delete"}).execute_action(
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
+    )
     assert result is None
     assert not test_dir.exists()
 
@@ -244,7 +312,10 @@ def test_compress_directory(temp_dir_setup):
     )
 
     result = ActionExecutor({"type": "compress", "target": "archives"}).execute_action(
-        test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
 
@@ -266,7 +337,10 @@ def test_compress_directory_conflict(temp_dir_setup):
     test_dir.mkdir()
 
     result = ActionExecutor({"type": "compress", "target": "archives"}).execute_action(
-        test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
     assert (target / "test_dir_1.zip").exists()
@@ -279,7 +353,10 @@ def test_move_directory(temp_dir_setup):
     create_test_structure(temp_dir, ["source/data.txt"])
 
     result = ActionExecutor({"type": "move", "target": "dest"}).execute_action(
-        test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
 
@@ -296,7 +373,10 @@ def test_compress_directory_with_archives(temp_dir_setup):
     create_test_structure(temp_dir, ["mixed/data.zip", "mixed/backup.rar"])
 
     result = ActionExecutor({"type": "compress", "target": "output"}).execute_action(
-        test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
 
@@ -312,7 +392,10 @@ def test_directory_name_with_archive_extension(temp_dir_setup):
     (test_dir / "file.txt").touch()
 
     result = ActionExecutor({"type": "compress", "target": "output"}).execute_action(
-        test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
     assert (temp_dir / "output" / "fake.zip.zip").exists()
@@ -325,7 +408,10 @@ def test_empty_directory_compression(temp_dir_setup):
     test_dir.mkdir()
 
     result = ActionExecutor({"type": "compress", "target": "archives"}).execute_action(
-        test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
     zip_path = temp_dir / "archives" / "empty.zip"
@@ -344,7 +430,10 @@ def test_compress_directory_with_empty_subdirectory(temp_dir_setup):
     )
 
     result = ActionExecutor({"type": "compress", "target": "output"}).execute_action(
-        test_dir, temp_dir, {"delete_unpacked_on_match": False}, Mock(spec=OrganizeConfig)
+        test_dir,
+        temp_dir,
+        {"delete_unpacked_on_match": False},
+        Mock(spec=OrganizeConfig),
     )
     assert isinstance(result, Path)
 

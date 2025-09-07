@@ -122,11 +122,15 @@ class ActionExecutor:
             final_path = strategy.execute(file_path, parent_path, target)
             if should_clean and is_preexisting_archive and final_path is not None:
                 try:
-                    logger.info(f"Cleaning unpacked directory for preexisting archive {file_path}")
+                    logger.info(
+                        f"Cleaning unpacked directory for preexisting archive {file_path}"
+                    )
                     cleaner = UnpackedDirectoryCleaner(config)
                     cleaner.clean(file_path, final_path)
                 except Exception as clean_e:
-                    logger.error(f"Error during unpacked directory cleanup for {file_path}: {clean_e}")
+                    logger.error(
+                        f"Error during unpacked directory cleanup for {file_path}: {clean_e}"
+                    )
             return final_path
         except Exception as e:
             logger.error(f"❌ Unexpected error processing {file_path}: {e}")
