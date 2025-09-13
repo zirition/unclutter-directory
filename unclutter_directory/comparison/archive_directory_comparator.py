@@ -122,8 +122,17 @@ class ArchiveDirectoryComparator:
             # Get files from archive
             archive_files = archive_manager.get_files(File.from_path(archive_path))
 
-            # Get files from directory
+            # Check if the archive contains directory entries
+            archive_has_directories = any(f.name.endswith("/") for f in archive_files)
+
+            # Get files from directory (always include directories initially)
             directory_files = self.directory_analyzer.get_files(directory_path)
+
+            # If archive doesn't have directories, filter them out from directory files
+            if not archive_has_directories:
+                directory_files = [
+                    f for f in directory_files if not f.name.endswith("/")
+                ]
 
             # Compare structures
             differences = self._compare_file_structures(archive_files, directory_files)
