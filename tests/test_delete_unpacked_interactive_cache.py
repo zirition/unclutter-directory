@@ -36,7 +36,6 @@ def test_delete_unpacked_interactive_cache_all():
         # Create config for interactive mode
         config = DeleteUnpackedConfig(
             target_dir=temp_path,
-            dry_run=False,
             always_delete=False,
             never_delete=False,
             include_hidden=False,
@@ -90,7 +89,6 @@ def test_delete_unpacked_interactive_cache_never():
         # Create config for interactive mode
         config = DeleteUnpackedConfig(
             target_dir=temp_path,
-            dry_run=False,
             always_delete=False,
             never_delete=False,
             include_hidden=False,

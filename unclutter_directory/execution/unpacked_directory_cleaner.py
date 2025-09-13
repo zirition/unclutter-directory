@@ -86,7 +86,7 @@ class UnpackedDirectoryCleaner:
             action_type="delete",
         ):
             logger.info(f"Proceeding with deletion of {expected_dir_path}")
-            if self.config.dry_run:
+            if self.config.never_delete:
                 logger.info(f"[DRY RUN] Would delete directory: {expected_dir_path}")
             else:
                 shutil.rmtree(expected_dir_path)

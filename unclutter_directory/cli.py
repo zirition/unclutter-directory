@@ -119,12 +119,6 @@ def validate(rules_file: str) -> None:
     "target_dir", type=click.Path(exists=True, file_okay=False, path_type=Path)
 )
 @click.option(
-    "--dry-run",
-    "-n",
-    is_flag=True,
-    help="Show what would be deleted without actually deleting",
-)
-@click.option(
     "--always-delete",
     "-y",
     is_flag=True,
@@ -143,7 +137,6 @@ def validate(rules_file: str) -> None:
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error messages")
 def delete_unpacked(
     target_dir: Path,
-    dry_run: bool,
     always_delete: bool,
     never_delete: bool,
     include_hidden: bool,
@@ -156,7 +149,7 @@ def delete_unpacked(
     directories with the same name (without extension). If they exist
     and have identical file structures, prompts to remove the uncompressed directory.
 
-    By default, this command runs in dry-run mode (--dry-run).
+    By default, runs in interactive mode.
     """
     try:
         # Validate conflicting options
@@ -164,14 +157,9 @@ def delete_unpacked(
             logger.error("--always-delete and --never-delete are mutually exclusive")
             sys.exit(1)
 
-        # If no flags specified, default to interactive mode
-        if not any([dry_run, always_delete, never_delete]):
-            logger.info("No deletion flag specified, running in interactive mode")
-
         # Create configuration
         config = DeleteUnpackedConfig(
             target_dir=target_dir,
-            dry_run=dry_run,
             always_delete=always_delete,
             never_delete=never_delete,
             include_hidden=include_hidden,

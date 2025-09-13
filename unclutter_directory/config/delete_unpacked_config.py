@@ -18,7 +18,6 @@ class DeleteUnpackedConfig:
     """Configuration for the delete-unpacked operation."""
 
     target_dir: Path
-    dry_run: bool = False  # Default to False for interactive mode
     always_delete: bool = False
     never_delete: bool = False
     include_hidden: bool = False
@@ -49,7 +48,7 @@ class DeleteUnpackedConfig:
     def execution_mode(self) -> ExecutionMode:
         """Determine execution mode based on configuration flags."""
 
-        if self.dry_run or self.never_delete:
+        if self.never_delete:
             return ExecutionMode.DRY_RUN
         elif self.always_delete:
             return ExecutionMode.AUTOMATIC
@@ -70,7 +69,7 @@ class DeleteUnpackedConfig:
         Returns:
             True if interactive prompt should be shown, False otherwise
         """
-        return not (self.dry_run or self.always_delete or self.never_delete)
+        return not (self.always_delete or self.never_delete)
 
     def should_delete(self) -> bool:
         """
@@ -83,15 +82,11 @@ class DeleteUnpackedConfig:
             return False
         if self.always_delete:
             return True
-        if self.dry_run:
-            return False  # Never actually delete in dry run mode
         return False  # Default to not delete
 
     def __str__(self) -> str:
         """String representation for logging"""
         flags = []
-        if self.dry_run:
-            flags.append("dry-run")
         if self.always_delete:
             flags.append("always-delete")
         if self.never_delete:
