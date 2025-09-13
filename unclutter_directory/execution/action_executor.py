@@ -14,7 +14,6 @@ comprehensive error handling for all file operations.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from unclutter_directory.commons import get_logger, validations
 
@@ -45,7 +44,7 @@ class ActionExecutor:
     """
 
     def __init__(
-        self, action: Dict, strategy_factory: Optional[ActionStrategyFactory] = None
+        self, action: dict, strategy_factory: ActionStrategyFactory | None = None
     ):
         """Initialize ActionExecutor with action configuration.
 
@@ -64,7 +63,7 @@ class ActionExecutor:
         self.strategy_factory = strategy_factory or ActionStrategyFactory()
 
     @property
-    def supported_actions(self) -> List[str]:
+    def supported_actions(self) -> list[str]:
         """Get list of supported action types.
 
         Returns:
@@ -74,7 +73,7 @@ class ActionExecutor:
 
     def execute_action(
         self, file_path: Path, parent_path: Path, rule: Rule, config: OrganizeConfig
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Execute the configured action on a file with validation and error handling.
         Main entry point for performing file organization actions. Uses Strategy pattern
         to delegate execution to appropriate strategy based on action type.

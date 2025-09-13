@@ -3,7 +3,6 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import List
 from unittest.mock import Mock
 
 import pytest
@@ -12,7 +11,7 @@ from unclutter_directory.config.organize_config import OrganizeConfig
 from unclutter_directory.execution.action_executor import ActionExecutor
 
 
-def create_test_structure(temp_dir: Path, structure: List[str]):
+def create_test_structure(temp_dir: Path, structure: list[str]):
     for item in structure:
         path = temp_dir / item
         if path.suffix:  # is file
@@ -238,7 +237,7 @@ def test_invalid_action(temp_dir_setup, caplog):
         "Invalid action type",
     ]
     caplog.set_level(logging.WARNING)
-    for action, expected_msg in zip(test_cases, expected_log_messages):
+    for action, expected_msg in zip(test_cases, expected_log_messages, strict=False):
         result = ActionExecutor(action).execute_action(
             test_file,
             temp_dir,

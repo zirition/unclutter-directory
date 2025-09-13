@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict, List
 
 from ..config.organize_config import OrganizeConfig
 from ..entities.file import File
@@ -81,7 +80,7 @@ class FileProcessor:
 
         return True
 
-    def process_files(self, file_paths: List[Path], target_dir: Path) -> Dict[str, int]:
+    def process_files(self, file_paths: list[Path], target_dir: Path) -> dict[str, int]:
         """
         Process multiple files and return statistics
 

@@ -1,5 +1,3 @@
-from typing import List
-
 from ..config.organize_config import OrganizeConfig
 from .base import Validator
 
@@ -7,7 +5,7 @@ from .base import Validator
 class ArgumentValidator(Validator):
     """Validates command line arguments for logical consistency"""
 
-    def validate(self, config: OrganizeConfig) -> List[str]:
+    def validate(self, config: OrganizeConfig) -> list[str]:
         """
         Validate that command line arguments don't conflict with each other
 

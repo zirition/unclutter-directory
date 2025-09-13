@@ -1,11 +1,11 @@
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from unclutter_directory.commons.logging import logger
 from unclutter_directory.commons.parsers import parse_size, parse_time
 
 # Type aliases
-Rules = List[dict]
+Rules = list[dict]
 # Constants for validation
 VALID_CONDITIONS = {
     "start",
@@ -43,7 +43,7 @@ def _get_rule_identifier(rule_num: int, rule: dict) -> str:
     return f"#{rule_num}"
 
 
-def _validate_condition(rule_num: int, key: str, value: str, rule: dict) -> List[str]:
+def _validate_condition(rule_num: int, key: str, value: str, rule: dict) -> list[str]:
     """
     Validate individual condition key-value pair.
 
@@ -88,7 +88,7 @@ def _validate_condition(rule_num: int, key: str, value: str, rule: dict) -> List
     return errors
 
 
-def _validate_action(rule_num: int, action: Dict[str, Any], rule: dict) -> List[str]:
+def _validate_action(rule_num: int, action: dict[str, Any], rule: dict) -> list[str]:
     """
     Validate action dictionary from a rule.
 
@@ -137,7 +137,7 @@ def _validate_action(rule_num: int, action: Dict[str, Any], rule: dict) -> List[
     return errors
 
 
-def validate_rules_file(rules: List) -> List[str]:
+def validate_rules_file(rules: list) -> list[str]:
     """
     Validate complete rules file structure and content.
 

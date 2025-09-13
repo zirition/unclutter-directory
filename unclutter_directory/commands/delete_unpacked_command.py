@@ -3,7 +3,6 @@ Delete Unpacked Command - Removes uncompressed directories that match compressed
 """
 
 import shutil
-from typing import List
 
 from ..commons import get_logger, setup_logging
 from ..comparison import ArchiveDirectoryComparator, ComparisonResult
@@ -117,7 +116,7 @@ class DeleteUnpackedCommand:
             raise
 
     def _print_summary(
-        self, results: List[ComparisonResult], deleted_count: int, total_pairs: int
+        self, results: list[ComparisonResult], deleted_count: int, total_pairs: int
     ) -> None:
         """Print a summary of the operation."""
         summary = self.comparator.get_comparison_summary(results)

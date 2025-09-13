@@ -4,7 +4,6 @@ Directory analysis utility for comparing directory structures with compressed ar
 
 import os
 from pathlib import Path
-from typing import Dict, List
 
 from ..commons import get_logger
 from ..entities.file import File
@@ -26,7 +25,7 @@ class DirectoryAnalyzer:
         """
         self.include_hidden = include_hidden
 
-    def get_files(self, directory_path: Path) -> List[File]:
+    def get_files(self, directory_path: Path) -> list[File]:
         """
         Get all files in a directory, similar to how CompressedArchive.get_files() works.
 
@@ -108,7 +107,7 @@ class DirectoryAnalyzer:
             logger.error(f"Error analyzing directory {directory_path}: {e}")
             return []
 
-    def get_file_list(self, directory_path: Path) -> List[str]:
+    def get_file_list(self, directory_path: Path) -> list[str]:
         """
         Get simple list of relative file paths for quick comparison.
 
@@ -121,7 +120,7 @@ class DirectoryAnalyzer:
         files = self.get_files(directory_path)
         return [file.name for file in files]
 
-    def get_file_details(self, directory_path: Path) -> Dict[str, Dict]:
+    def get_file_details(self, directory_path: Path) -> dict[str, dict]:
         """
         Get detailed file information including sizes and modification times.
 

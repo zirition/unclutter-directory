@@ -8,7 +8,6 @@ modes with proper caching for interactive sessions.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
 
 from ..commons import get_logger
 
@@ -28,8 +27,8 @@ class ConfirmationHandler(ABC):
         self,
         context_info: str,
         prompt_template: str,
-        cache_key: Optional[str] = None,
-        action_type: Optional[str] = None,
+        cache_key: str | None = None,
+        action_type: str | None = None,
     ) -> bool:
         """
         Determine if an action should be executed based on the context and mode.
@@ -54,8 +53,8 @@ class DryRunConfirmationHandler(ConfirmationHandler):
         self,
         context_info: str,
         prompt_template: str,
-        cache_key: Optional[str] = None,
-        action_type: Optional[str] = None,
+        cache_key: str | None = None,
+        action_type: str | None = None,
     ) -> bool:
         """
         Always returns False in dry-run mode, logging the intended action.
@@ -91,8 +90,8 @@ class AutomaticConfirmationHandler(ConfirmationHandler):
         self,
         context_info: str,
         prompt_template: str,
-        cache_key: Optional[str] = None,
-        action_type: Optional[str] = None,
+        cache_key: str | None = None,
+        action_type: str | None = None,
     ) -> bool:
         """
         Determine execution based on action type and configuration.
@@ -123,14 +122,14 @@ class InteractiveConfirmationHandler(ConfirmationHandler):
 
     def __init__(self):
         """Initialize interactive handler with empty response cache."""
-        self._responses: Dict[str, str] = {}
+        self._responses: dict[str, str] = {}
 
     def should_execute(
         self,
         context_info: str,
         prompt_template: str,
-        cache_key: Optional[str] = None,
-        action_type: Optional[str] = None,
+        cache_key: str | None = None,
+        action_type: str | None = None,
     ) -> bool:
         """
         Handle user interaction for delete actions, with caching.

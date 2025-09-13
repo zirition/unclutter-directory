@@ -11,8 +11,6 @@ The factory pattern allows for:
 - Consistent instance creation
 """
 
-from typing import Dict, List, Optional, Type
-
 from ..commons import get_logger
 from .action_strategies import (
     ActionStrategy,
@@ -33,7 +31,7 @@ class ActionStrategyFactory:
         _strategies: Dictionary mapping action types to strategy classes
     """
 
-    _strategies: Dict[str, Type[ActionStrategy]] = {
+    _strategies: dict[str, type[ActionStrategy]] = {
         "move": MoveStrategy,
         "delete": DeleteStrategy,
         "compress": CompressStrategy,
@@ -42,7 +40,7 @@ class ActionStrategyFactory:
     @classmethod
     def create_strategy(
         cls, action_type: str, logger_instance=None
-    ) -> Optional[ActionStrategy]:
+    ) -> ActionStrategy | None:
         """Create a strategy instance for the specified action type.
 
         Args:
@@ -68,7 +66,7 @@ class ActionStrategyFactory:
         return strategy_class(logger_instance)
 
     @classmethod
-    def get_available_actions(cls) -> List[str]:
+    def get_available_actions(cls) -> list[str]:
         """Get a list of all available action types.
 
         Returns:
@@ -98,7 +96,7 @@ class ActionStrategyFactory:
 
     @classmethod
     def register_strategy(
-        cls, action_type: str, strategy_class: Type[ActionStrategy]
+        cls, action_type: str, strategy_class: type[ActionStrategy]
     ) -> None:
         """Register a new strategy for a specific action type.
 
@@ -146,7 +144,7 @@ class ActionStrategyFactory:
         return False
 
     @classmethod
-    def get_strategy_class(cls, action_type: str) -> Optional[Type[ActionStrategy]]:
+    def get_strategy_class(cls, action_type: str) -> type[ActionStrategy] | None:
         """Get the strategy class for a specific action type.
 
         This is useful for introspection or advanced use cases.
@@ -160,7 +158,7 @@ class ActionStrategyFactory:
         return cls._strategies.get(action_type)
 
     @classmethod
-    def get_strategy_info(cls) -> Dict[str, str]:
+    def get_strategy_info(cls) -> dict[str, str]:
         """Get information about all registered strategies.
 
         Returns:

@@ -3,8 +3,8 @@ Archive Directory Comparator - Compares compressed files with their correspondin
 """
 
 import os
+import unicodedata
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 from ..commons import get_logger
 from ..entities.compressed_archive import get_archive_manager
@@ -22,9 +22,9 @@ class ComparisonResult:
         archive_path: Path,
         directory_path: Path,
         identical: bool,
-        archive_files: List[File],
-        directory_files: List[File],
-        differences: List[str] = None,
+        archive_files: list[File],
+        directory_files: list[File],
+        differences: list[str] = None,
     ):
         self.archive_path = archive_path
         self.directory_path = directory_path
@@ -54,7 +54,19 @@ class ArchiveDirectoryComparator:
         self.include_hidden = include_hidden
         self.directory_analyzer = DirectoryAnalyzer(include_hidden=include_hidden)
 
-    def find_potential_duplicates(self, target_dir: Path) -> List[Tuple[Path, Path]]:
+    def _normalize_unicode(self, text: str) -> str:
+        """
+        Normalize unicode text to handle combining characters.
+
+        Args:
+            text: Text to normalize
+
+        Returns:
+            Normalized text using NFC (Canonical Decomposition, followed by Canonical Composition)
+        """
+        return unicodedata.normalize("NFC", text)
+
+    def find_potential_duplicates(self, target_dir: Path) -> list[tuple[Path, Path]]:
         """
         Find potential archive-directory duplicates in target directory.
 
@@ -93,6 +105,34 @@ class ArchiveDirectoryComparator:
         )
         return potential_duplicates
 
+    def _strip_directory_prefix(self, file: File, expected_dir_name: str) -> File:
+        """
+        Strip the directory prefix from a file path if it matches the expected directory name.
+
+        Args:
+            file: File to process
+            expected_dir_name: Expected directory name to strip
+
+        Returns:
+            File with stripped prefix or original file if no prefix matches
+        """
+        normalized_name = self._normalize_unicode(file.name)
+        expected_prefix = self._normalize_unicode(expected_dir_name) + "/"
+
+        # Check if this is the root directory entry (should be filtered out)
+        if normalized_name == expected_prefix:
+            return None  # Signal to filter out this file
+
+        # Check if file has the directory prefix
+        if normalized_name.startswith(expected_prefix):
+            stripped_name = normalized_name[len(expected_prefix) :]
+            return File(
+                path=file.path, name=stripped_name, date=file.date, size=file.size
+            )
+
+        # No prefix to strip, return original file
+        return file
+
     def compare_archive_and_directory(
         self, archive_path: Path, directory_path: Path
     ) -> ComparisonResult:
@@ -119,23 +159,36 @@ class ArchiveDirectoryComparator:
                     [f"Unsupported archive format: {archive_path.suffix}"],
                 )
 
-            # Get files from archive
+            # Get files from archive and directory
             archive_files = archive_manager.get_files(File.from_path(archive_path))
-
-            # Check if the archive contains directory entries
-            archive_has_directories = any(f.name.endswith("/") for f in archive_files)
-
-            # Get files from directory (always include directories initially)
             directory_files = self.directory_analyzer.get_files(directory_path)
 
-            # If archive doesn't have directories, filter them out from directory files
-            if not archive_has_directories:
+            # Extract and normalize the expected directory name from the archive filename
+            expected_dir_name = archive_path.stem
+
+            # Process archive files to normalize paths and strip directory prefix
+            processed_archive_files = []
+            for file in archive_files:
+                processed_file = self._strip_directory_prefix(file, expected_dir_name)
+                if processed_file is not None:  # Filter out root directory entries
+                    processed_archive_files.append(processed_file)
+
+            # Check if the archive originally contained subdirectory entries
+            original_archive_has_directories = any(
+                f.name.endswith("/") and not f.name == (expected_dir_name + "/")
+                for f in archive_files
+            )
+
+            # If archive doesn't have subdirectories, filter them out from directory files
+            if not original_archive_has_directories:
                 directory_files = [
                     f for f in directory_files if not f.name.endswith("/")
                 ]
 
             # Compare structures
-            differences = self._compare_file_structures(archive_files, directory_files)
+            differences = self._compare_file_structures(
+                processed_archive_files, directory_files
+            )
 
             # Structures are identical if there are no differences
             identical = len(differences) == 0
@@ -144,7 +197,7 @@ class ArchiveDirectoryComparator:
                 archive_path,
                 directory_path,
                 identical,
-                archive_files,
+                processed_archive_files,
                 directory_files,
                 differences,
             )
@@ -178,13 +231,13 @@ class ArchiveDirectoryComparator:
         return get_archive_manager(archive_file)
 
     def _compare_file_structures(
-        self, archive_files: List[File], directory_files: List[File]
-    ) -> List[str]:
+        self, archive_files: list[File], directory_files: list[File]
+    ) -> list[str]:
         """
         Compare file structures from archive and directory.
 
         Args:
-            archive_files: Files from archive
+            archive_files: Files from archive (with directory prefix stripped)
             directory_files: Files from directory
 
         Returns:
@@ -192,9 +245,17 @@ class ArchiveDirectoryComparator:
         """
         differences = []
 
-        # Create sets of file paths for comparison
-        archive_paths = {file.name for file in archive_files}
-        directory_paths = {file.name for file in directory_files}
+        # Create normalized mappings for efficient lookup
+        normalized_archive_files = {
+            self._normalize_unicode(file.name): file for file in archive_files
+        }
+        normalized_directory_files = {
+            self._normalize_unicode(file.name): file for file in directory_files
+        }
+
+        # Create sets of normalized file paths for comparison
+        archive_paths = set(normalized_archive_files.keys())
+        directory_paths = set(normalized_directory_files.keys())
 
         # Find files that are in archive but not in directory
         missing_in_directory = archive_paths - directory_paths
@@ -213,22 +274,22 @@ class ArchiveDirectoryComparator:
                 [f"Extra in directory: {path}" for path in sorted(extra_in_directory)]
             )
 
-        # Compare file sizes and modification times for common files
+        # Compare file sizes for common files
         common_files = archive_paths & directory_paths
-        for file_path in common_files:
-            archive_file = next(f for f in archive_files if f.name == file_path)
-            directory_file = next(f for f in directory_files if f.name == file_path)
+        for normalized_path in common_files:
+            archive_file = normalized_archive_files[normalized_path]
+            directory_file = normalized_directory_files[normalized_path]
 
             # Compare sizes
             if archive_file.size != directory_file.size:
                 differences.append(
-                    f"Size mismatch for {file_path}: "
+                    f"Size mismatch for {normalized_path}: "
                     f"archive={archive_file.size}, directory={directory_file.size}"
                 )
 
         return differences
 
-    def get_comparison_summary(self, results: List[ComparisonResult]) -> Dict:
+    def get_comparison_summary(self, results: list[ComparisonResult]) -> dict:
         """
         Generate summary statistics from comparison results.
 

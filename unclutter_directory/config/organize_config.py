@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 
 class ExecutionMode(Enum):
@@ -17,7 +16,7 @@ class OrganizeConfig:
     """Configuration object for organize operation"""
 
     target_dir: Path
-    rules_file: Optional[str]
+    rules_file: str | None
     dry_run: bool
     quiet: bool
     always_delete: bool
@@ -40,6 +39,6 @@ class OrganizeConfig:
             return ExecutionMode.INTERACTIVE
 
     @property
-    def rules_file_path(self) -> Optional[Path]:
+    def rules_file_path(self) -> Path | None:
         """Get rules file as Path object"""
         return Path(self.rules_file) if self.rules_file else None

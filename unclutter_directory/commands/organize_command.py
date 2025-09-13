@@ -1,5 +1,4 @@
 import sys
-from typing import Dict
 
 from ..commons import get_logger, setup_logging
 from ..config.organize_config import OrganizeConfig
@@ -86,7 +85,7 @@ class OrganizeCommand:
             logger.error(f"Error during file processing: {e}")
             raise
 
-    def _log_processing_summary(self, stats: Dict[str, int]) -> None:
+    def _log_processing_summary(self, stats: dict[str, int]) -> None:
         """Log processing summary statistics"""
         total = stats["total_files"]
         processed = stats["processed_files"]

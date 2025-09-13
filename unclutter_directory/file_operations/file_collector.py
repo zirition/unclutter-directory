@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 from ..commons import get_logger
 
@@ -21,7 +20,7 @@ class FileCollector:
         """
         self.include_hidden = include_hidden
 
-    def collect(self, target_dir: Path) -> List[Path]:
+    def collect(self, target_dir: Path) -> list[Path]:
         """
         Collect files from target directory
 
@@ -55,7 +54,7 @@ class FileCollector:
         logger.debug(f"Collected {len(filtered_items)} items from {target_dir}")
         return filtered_items
 
-    def collect_recursive(self, target_dir: Path, max_depth: int = 1) -> List[Path]:
+    def collect_recursive(self, target_dir: Path, max_depth: int = 1) -> list[Path]:
         """
         Collect files recursively up to specified depth
 

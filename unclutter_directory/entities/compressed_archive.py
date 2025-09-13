@@ -1,6 +1,5 @@
 import zipfile
 from abc import ABC, abstractmethod
-from typing import List, Optional
 
 import py7zr
 import rarfile
@@ -14,7 +13,7 @@ logger = get_logger()
 
 class CompressedArchive(ABC):
     @abstractmethod
-    def get_files(self, file: File) -> List[File]:
+    def get_files(self, file: File) -> list[File]:
         pass
 
 
@@ -22,19 +21,35 @@ class ZipArchive(CompressedArchive):
     def __init__(self):
         pass
 
-    def get_files(self, file: File) -> List[File]:
+    def get_files(self, file: File) -> list[File]:
         archive_path = file.path / file.name
         try:
-            with zipfile.ZipFile(archive_path, "r") as zipf:
-                return [
-                    File(
-                        file.path,
-                        name,
-                        zipf.getinfo(name).date_time,
-                        zipf.getinfo(name).file_size,
-                    )
-                    for name in zipf.namelist()
-                ]
+            # Try with UTF-8 encoding first (handles most modern ZIP files correctly)
+            try:
+                with zipfile.ZipFile(
+                    archive_path, "r", metadata_encoding="utf-8"
+                ) as zipf:
+                    return [
+                        File(
+                            file.path,
+                            name,
+                            zipf.getinfo(name).date_time,
+                            zipf.getinfo(name).file_size,
+                        )
+                        for name in zipf.namelist()
+                    ]
+            except TypeError:
+                # Fallback for older Python versions or if metadata_encoding is not supported
+                with zipfile.ZipFile(archive_path, "r") as zipf:
+                    return [
+                        File(
+                            file.path,
+                            name,
+                            zipf.getinfo(name).date_time,
+                            zipf.getinfo(name).file_size,
+                        )
+                        for name in zipf.namelist()
+                    ]
         except zipfile.BadZipFile:
             logger.error(f"❌ Error reading zip file: {archive_path}")
             return []
@@ -44,7 +59,7 @@ class RarArchive(CompressedArchive):
     def __init__(self):
         pass
 
-    def get_files(self, file: File) -> List[File]:
+    def get_files(self, file: File) -> list[File]:
         archive_path = file.path / file.name
         try:
             with RarFile(archive_path) as rarf:
@@ -66,7 +81,7 @@ class SevenZipArchive(CompressedArchive):
     def __init__(self):
         pass
 
-    def get_files(self, file: File) -> List[File]:
+    def get_files(self, file: File) -> list[File]:
         archive_path = file.path / file.name
         try:
             with py7zr.SevenZipFile(archive_path, mode="r") as szf:
@@ -159,7 +174,7 @@ class ArchiveHandlerChain:
 
     def __init__(self):
         """Initialize archive handler chain with default handlers"""
-        self.handlers: List[ArchiveHandler] = [
+        self.handlers: list[ArchiveHandler] = [
             ZipHandler(),
             RarHandler(),
             SevenZipHandler(),
@@ -174,7 +189,7 @@ class ArchiveHandlerChain:
         """
         self.handlers.append(handler)
 
-    def get_archive_handler(self, file: File) -> Optional[CompressedArchive]:
+    def get_archive_handler(self, file: File) -> CompressedArchive | None:
         """
         Get the appropriate archive handler for the given file.
 
@@ -196,7 +211,7 @@ class ArchiveHandlerChain:
 
 
 # Factory function using Chain of Responsibility
-def get_archive_manager(file: File) -> Optional[CompressedArchive]:
+def get_archive_manager(file: File) -> CompressedArchive | None:
     """
     Factory function that uses Chain of Responsibility to get the appropriate archive manager.
 

@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Optional
 
 import yaml
 
@@ -25,7 +24,7 @@ class RulesFileValidator(Validator):
     Uses safe YAML loading to prevent code injection attacks.
     """
 
-    def validate(self, config: OrganizeConfig) -> List[str]:
+    def validate(self, config: OrganizeConfig) -> list[str]:
         """
         Validate rules file and its content.
 
@@ -105,7 +104,7 @@ class RulesFileValidator(Validator):
 
         return errors
 
-    def _load_rules(self, rules_file: str) -> Optional[Rules]:
+    def _load_rules(self, rules_file: str) -> Rules | None:
         """
         Load rules from YAML file with comprehensive error handling.
 

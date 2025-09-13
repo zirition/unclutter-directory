@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from ..config.organize_config import OrganizeConfig
 from .base import Validator
@@ -8,7 +7,7 @@ from .base import Validator
 class DirectoryValidator(Validator):
     """Validates target directory permissions and accessibility"""
 
-    def validate(self, config: OrganizeConfig) -> List[str]:
+    def validate(self, config: OrganizeConfig) -> list[str]:
         """
         Validate that target directory exists and is accessible
 

@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
 from click_supercharged import SuperchargedClickGroup
@@ -41,7 +40,7 @@ def cli():
 )
 def organize(
     target_dir: Path,
-    rules_file: Optional[str],
+    rules_file: str | None,
     dry_run: bool,
     quiet: bool,
     always_delete: bool,

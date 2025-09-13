@@ -14,7 +14,7 @@ Thank you for your interest in contributing to Unclutter Directory! We welcome c
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 - git
 
 ### Installation
@@ -88,7 +88,7 @@ To create a new release:
 ## Development Guidelines
 
 ### Code Style
-- We use Python 3.8+ with type hints
+- We use Python 3.11+ with type hints
 - Code is formatted with ruff's black-compatible formatter
 - Line length: 88 characters (black default)
 - Follow PEP 8 conventions

@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from ..commons.validations import parse_size, parse_time
 from ..entities.compressed_archive import CompressedArchive, get_archive_manager
 from ..entities.file import File
@@ -13,7 +11,7 @@ age constraints, and archive content inspection for compressed files.
 
 
 class FileMatcher:
-    def __init__(self, rules: List[Dict]):
+    def __init__(self, rules: list[dict]):
         """
         Initialize FileMatcher with a list of matching rules.
 
@@ -24,7 +22,7 @@ class FileMatcher:
         """
         self.rules = rules
 
-    def match(self, file: File) -> Dict:
+    def match(self, file: File) -> dict:
         """
         Match a file against the configured rules.
 
@@ -78,7 +76,7 @@ class FileMatcher:
         return get_archive_manager(file)
 
     def _file_matches_conditions(
-        self, file: File, conditions: Dict, case_sensitive: bool
+        self, file: File, conditions: dict, case_sensitive: bool
     ) -> bool:
         """
         Check if a file matches the specified conditions.

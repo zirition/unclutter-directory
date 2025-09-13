@@ -1,5 +1,3 @@
-from typing import List
-
 from ..config.organize_config import OrganizeConfig
 from .argument_validator import ArgumentValidator
 from .base import Validator
@@ -15,7 +13,7 @@ class ValidationChain:
 
     def __init__(self):
         """Initialize validation chain with default validators"""
-        self.validators: List[Validator] = [
+        self.validators: list[Validator] = [
             ArgumentValidator(),
             DirectoryValidator(),
             RulesFileValidator(),  # Must be last as it may modify config
@@ -30,7 +28,7 @@ class ValidationChain:
         """
         self.validators.append(validator)
 
-    def validate(self, config: OrganizeConfig) -> List[str]:
+    def validate(self, config: OrganizeConfig) -> list[str]:
         """
         Run all validators and collect errors
 

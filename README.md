@@ -402,11 +402,7 @@ Search inside compressed files:
 ```bash
 git clone https://github.com/zirition/unclutter-directory
 cd unclutter-directory
-python -m venv .venv
-source .venv/bin/activate  # Linux/MacOS
-# .venv\Scripts\activate  # Windows
-
-pip install -e .[dev]  # Install with development dependencies
+uv sync --dev  # Install with development dependencies
 ```
 
 

@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 from ..config.organize_config import OrganizeConfig
 
@@ -8,7 +7,7 @@ class Validator(ABC):
     """Abstract base class for validators in the validation chain"""
 
     @abstractmethod
-    def validate(self, config: OrganizeConfig) -> List[str]:
+    def validate(self, config: OrganizeConfig) -> list[str]:
         """
         Validate configuration and return list of error messages.
 

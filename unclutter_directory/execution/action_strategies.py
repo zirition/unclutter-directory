@@ -20,7 +20,7 @@ import shutil
 import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from ..commons import get_logger
 
@@ -58,9 +58,7 @@ class ActionStrategy(ABC):
         self._logger = logger_instance
 
     @abstractmethod
-    def execute(
-        self, file_path: Path, parent_path: Path, target: str
-    ) -> Optional[Path]:
+    def execute(self, file_path: Path, parent_path: Path, target: str) -> Path | None:
         """Execute the specific action.
 
         Args:
@@ -140,9 +138,7 @@ class MoveStrategy(ActionStrategy):
         # to maintain original behavior
         return True
 
-    def execute(
-        self, file_path: Path, parent_path: Path, target: str
-    ) -> Optional[Path]:
+    def execute(self, file_path: Path, parent_path: Path, target: str) -> Path | None:
         """Execute move operation.
 
         Args:
@@ -214,9 +210,7 @@ class DeleteStrategy(ActionStrategy):
         # For delete, we don't need target validation as it's not used
         return True
 
-    def execute(
-        self, file_path: Path, parent_path: Path, target: str
-    ) -> Optional[Path]:
+    def execute(self, file_path: Path, parent_path: Path, target: str) -> Path | None:
         """Execute delete operation.
 
         Args:
@@ -291,9 +285,7 @@ class CompressStrategy(ActionStrategy):
 
         return True
 
-    def execute(
-        self, file_path: Path, parent_path: Path, target: str
-    ) -> Optional[Path]:
+    def execute(self, file_path: Path, parent_path: Path, target: str) -> Path | None:
         """Execute compression operation.
 
         Args:
