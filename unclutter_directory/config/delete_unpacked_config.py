@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..commons import get_logger
+from ..config.organize_config import ExecutionMode
 
 """
 Configuration class for the check-duplicates command.
@@ -43,6 +44,17 @@ class DeleteUnpackedConfig:
             for error in errors:
                 logger.error(f"Configuration error: {error}")
             raise ValueError("Invalid configuration: " + "; ".join(errors))
+
+    @property
+    def execution_mode(self) -> ExecutionMode:
+        """Determine execution mode based on configuration flags."""
+
+        if self.dry_run or self.never_delete:
+            return ExecutionMode.DRY_RUN
+        elif self.always_delete:
+            return ExecutionMode.AUTOMATIC
+        else:
+            return ExecutionMode.INTERACTIVE
 
     @property
     def target_dir_path(self) -> Path:
