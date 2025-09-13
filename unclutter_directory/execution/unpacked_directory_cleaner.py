@@ -2,12 +2,12 @@
 Unpacked Directory Cleaner - Handles cleaning of unpacked directories after archive processing.
 """
 
+import shutil
 from pathlib import Path
 
 from ..commons import get_logger
 from ..comparison import ArchiveDirectoryComparator
 from ..config.organize_config import OrganizeConfig
-from .delete_strategy import create_delete_strategy
 
 logger = get_logger()
 
@@ -25,13 +25,6 @@ class UnpackedDirectoryCleaner:
         self.config = config
         self.comparator = ArchiveDirectoryComparator(
             include_hidden=config.include_hidden
-        )
-        self.delete_strategy = create_delete_strategy(
-            always_delete=config.always_delete,
-            never_delete=config.never_delete,
-            interactive=not (
-                config.dry_run or config.always_delete or config.never_delete
-            ),
         )
 
     def clean(self, original_archive_path: Path, final_archive_path: Path) -> None:
@@ -73,12 +66,30 @@ class UnpackedDirectoryCleaner:
         logger.info(
             "Archive and directory are identical. Checking deletion strategy..."
         )
-        if self.delete_strategy.should_delete_directory(
-            expected_dir_path, final_archive_path
+
+        # Create confirmation handler locally to avoid circular imports
+        from ..factories.component_factory import ComponentFactory
+
+        confirmation_handler = ComponentFactory.create_confirmation_handler(self.config)
+
+        # Use confirmation handler to decide whether to delete
+        context_info = f"directory '{expected_dir_path.name}' (identical to '{final_archive_path.name}')"
+        prompt_template = (
+            "Delete duplicate directory '{context}'? [Y(es)/N(o)/A(ll)/Never]: "
+        )
+        cache_key = str(expected_dir_path.parent)
+
+        if confirmation_handler.should_execute(
+            context_info=context_info,
+            prompt_template=prompt_template,
+            cache_key=cache_key,
+            action_type="delete",
         ):
             logger.info(f"Proceeding with deletion of {expected_dir_path}")
-            self.delete_strategy.perform_deletion(
-                expected_dir_path, final_archive_path, dry_run=self.config.dry_run
-            )
+            if self.config.dry_run:
+                logger.info(f"[DRY RUN] Would delete directory: {expected_dir_path}")
+            else:
+                shutil.rmtree(expected_dir_path)
+                logger.info(f"✅ Deleted duplicate directory: {expected_dir_path}")
         else:
             logger.info(f"Deletion skipped for {expected_dir_path}")

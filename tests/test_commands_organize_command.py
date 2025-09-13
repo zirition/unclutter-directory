@@ -32,11 +32,11 @@ def mock_config(temp_path):
 def mock_factory():
     mock_matcher = Mock()
     mock_collector = Mock()
-    mock_strategy = Mock()
+    mock_handler = Mock()
     mock_factory = Mock()
     mock_factory.create_file_matcher.return_value = mock_matcher
     mock_factory.create_file_collector.return_value = mock_collector
-    mock_factory.create_execution_strategy.return_value = mock_strategy
+    mock_factory.create_confirmation_handler.return_value = mock_handler
     return mock_factory
 
 
@@ -60,7 +60,6 @@ def test_init(mock_config):
     assert command.config == mock_config
     assert isinstance(command.validation_chain, ValidationChain)
     assert isinstance(command.factory, ComponentFactory)
-    assert command.rule_responses == {}
 
 
 @pytest.mark.parametrize(
@@ -190,14 +189,11 @@ def test_process_files_successful_processing(
     # Verify all components were created
     mock_factory.create_file_matcher.assert_called_once_with(mock_config)
     mock_factory.create_file_collector.assert_called_once_with(mock_config)
-    mock_factory.create_execution_strategy.assert_called_once_with(mock_config)
 
     # Verify processor was created and called
     mock_matcher = mock_factory.create_file_matcher.return_value
-    mock_strategy = mock_factory.create_execution_strategy.return_value
-    mock_processor_cls.assert_called_once_with(
-        mock_matcher, mock_strategy, command.rule_responses, mock_config
-    )
+    mock_handler = mock_factory.create_confirmation_handler.return_value
+    mock_processor_cls.assert_called_once_with(mock_matcher, mock_handler, mock_config)
     mock_processor.process_files.assert_called_once_with(
         test_files, mock_config.target_dir
     )
@@ -428,5 +424,5 @@ def test_organize_with_delete_unpacked_dry_run(temp_path, caplog):
     assert unpacked_dir.exists()
 
     # Assert logs indicate planned actions but no execution
-    assert "[DRY RUN] Would execute" in caplog.text
+    assert "[DRY RUN] Would move for" in caplog.text
     assert "Cleaning unpacked directory" not in caplog.text

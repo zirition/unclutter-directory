@@ -3,9 +3,9 @@ from typing import Dict, List
 
 from ..config.organize_config import OrganizeConfig
 from ..entities.file import File
+from ..execution.confirmation import ConfirmationHandler
 from ..file_operations.file_matcher import FileMatcher
 from .action_executor import ActionExecutor
-from .strategies import ExecutionStrategy, RuleResponses
 
 
 class FileProcessor:
@@ -17,21 +17,18 @@ class FileProcessor:
     def __init__(
         self,
         matcher: FileMatcher,
-        strategy: ExecutionStrategy,
-        rule_responses: RuleResponses,
+        confirmation_handler: ConfirmationHandler,
         config: OrganizeConfig,
     ):
         """
         Initialize file processor
         Args:
             matcher: FileMatcher instance for rule matching
-            strategy: ExecutionStrategy for determining execution behavior
-            rule_responses: Dictionary to track user responses for rules
+            confirmation_handler: Handler for determining execution behavior
             config: OrganizeConfig instance
         """
         self.matcher = matcher
-        self.strategy = strategy
-        self.rule_responses = rule_responses
+        self.confirmation_handler = confirmation_handler
         self.config = config
 
     def process_file(self, file_path: Path, target_dir: Path) -> bool:
@@ -57,12 +54,24 @@ class FileProcessor:
         action = rule.get("action", {})
         action_type = action.get("type")
 
-        # Log the match
-        self.strategy.log_match(file_path, action_type, action.get("target"))
+        # Log the match (handler will log in dry-run/interactive modes)
+        # Determine if we should execute the action using the confirmation handler
+        context_info = str(file_path)
+        cache_key = str(id(rule))
 
-        # Determine if we should execute the action
-        should_execute = self.strategy.should_execute_action(
-            file_path, action_type, rule, self.rule_responses
+        if action_type == "delete":
+            prompt_template = (
+                "Do you want to delete {context}? [Y(es)/N(o)/A(ll)/Never]: "
+            )
+        else:
+            # For non-delete actions, use an empty prompt (handler returns True automatically)
+            prompt_template = ""
+
+        should_execute = self.confirmation_handler.should_execute(
+            context_info=context_info,
+            prompt_template=prompt_template,
+            cache_key=cache_key,
+            action_type=action_type,
         )
 
         # Execute action if determined

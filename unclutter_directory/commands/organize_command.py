@@ -4,7 +4,6 @@ from typing import Dict
 from ..commons import get_logger, setup_logging
 from ..config.organize_config import OrganizeConfig
 from ..execution.file_processor import FileProcessor
-from ..execution.strategies import RuleResponses
 from ..factories.component_factory import ComponentFactory
 from ..validation.validation_chain import ValidationChain
 
@@ -27,7 +26,6 @@ class OrganizeCommand:
         self.config = config
         self.validation_chain = ValidationChain()
         self.factory = ComponentFactory()
-        self.rule_responses: RuleResponses = {}
 
     def execute(self) -> None:
         """
@@ -65,7 +63,7 @@ class OrganizeCommand:
             # Create components using factory
             collector = self.factory.create_file_collector(self.config)
             matcher = self.factory.create_file_matcher(self.config)
-            strategy = self.factory.create_execution_strategy(self.config)
+            confirmation_handler = self.factory.create_confirmation_handler(self.config)
 
             # Collect files to process
             files = collector.collect(self.config.target_dir)
@@ -78,9 +76,7 @@ class OrganizeCommand:
                 return
 
             # Process files
-            processor = FileProcessor(
-                matcher, strategy, self.rule_responses, self.config
-            )
+            processor = FileProcessor(matcher, confirmation_handler, self.config)
             stats = processor.process_files(files, self.config.target_dir)
 
             # Log summary statistics

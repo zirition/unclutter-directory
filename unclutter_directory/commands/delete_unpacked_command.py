@@ -2,12 +2,14 @@
 Delete Unpacked Command - Removes uncompressed directories that match compressed files.
 """
 
+import shutil
 from typing import List
 
 from ..commons import get_logger, setup_logging
 from ..comparison import ArchiveDirectoryComparator, ComparisonResult
 from ..config.delete_unpacked_config import DeleteUnpackedConfig
-from ..execution.delete_strategy import create_delete_strategy
+from ..execution.confirmation import ConfirmationHandler
+from ..factories.component_factory import ComponentFactory
 
 logger = get_logger()
 
@@ -26,10 +28,8 @@ class DeleteUnpackedCommand:
         self.comparator = ArchiveDirectoryComparator(
             include_hidden=config.include_hidden
         )
-        self.delete_strategy = create_delete_strategy(
-            always_delete=config.always_delete,
-            never_delete=config.never_delete or config.dry_run,
-            interactive=config.should_interactive_prompt(),
+        self.confirmation_handler: ConfirmationHandler = (
+            ComponentFactory.create_confirmation_handler(config)
         )
 
     def execute(self) -> None:
@@ -42,7 +42,6 @@ class DeleteUnpackedCommand:
             logger.info(
                 f"🔍 Scanning for uncompressed directories in {self.config.target_dir}"
             )
-            logger.info(f"Strategy: {type(self.delete_strategy).__name__}")
 
             # Find potential archive-directory pairs
             potential_pairs = self.comparator.find_potential_duplicates(
@@ -73,15 +72,20 @@ class DeleteUnpackedCommand:
                     if result.identical:
                         logger.info("✅ Structures are identical")
 
-                        # Ask user if should delete the directory
-                        if self.delete_strategy.should_delete_directory(
-                            directory_path, archive_path
+                        # Ask user if should delete the directory using confirmation handler
+                        context_info = f"directory '{directory_path.name}' (identical to '{archive_path.name}')"
+                        prompt_template = "Delete duplicate directory '{context}'? [Y(es)/N(o)/A(ll)/Never]: "
+                        cache_key = str(directory_path.parent)
+
+                        if self.confirmation_handler.should_execute(
+                            context_info=context_info,
+                            prompt_template=prompt_template,
+                            cache_key=cache_key,
+                            action_type="delete",
                         ):
-                            # Perform the deletion
-                            if self.delete_strategy.perform_deletion(
-                                directory_path, archive_path, False
-                            ):
-                                deleted_count += 1
+                            # Perform the deletion directly
+                            shutil.rmtree(directory_path)
+                            deleted_count += 1
                         else:
                             logger.info(
                                 f"⏭️  Skipping deletion of {directory_path.name}"

@@ -3,12 +3,13 @@ import yaml
 from unclutter_directory.commons.aliases import Rules
 
 from ..commons import get_logger
+from ..config.delete_unpacked_config import DeleteUnpackedConfig
 from ..config.organize_config import ExecutionMode, OrganizeConfig
-from ..execution.strategies import (
-    AutomaticStrategy,
-    DryRunStrategy,
-    ExecutionStrategy,
-    InteractiveStrategy,
+from ..execution.confirmation import (
+    AutomaticConfirmationHandler,
+    ConfirmationHandler,
+    DryRunConfirmationHandler,
+    InteractiveConfirmationHandler,
 )
 from ..file_operations.file_collector import FileCollector
 from ..file_operations.file_matcher import FileMatcher
@@ -56,24 +57,28 @@ class ComponentFactory:
         return FileCollector(include_hidden=config.include_hidden)
 
     @staticmethod
-    def create_execution_strategy(config: OrganizeConfig) -> ExecutionStrategy:
+    def create_confirmation_handler(config) -> ConfirmationHandler:
         """
-        Create appropriate execution strategy based on configuration
+        Create appropriate confirmation handler based on configuration.
+        Works with both OrganizeConfig and DeleteUnpackedConfig.
 
         Args:
-            config: Configuration determining strategy type
+            config: Configuration determining handler type (OrganizeConfig or DeleteUnpackedConfig)
 
         Returns:
-            Appropriate ExecutionStrategy instance
+            Appropriate ConfirmationHandler instance
         """
         if config.execution_mode == ExecutionMode.DRY_RUN:
-            return DryRunStrategy()
+            return DryRunConfirmationHandler()
         elif config.execution_mode == ExecutionMode.AUTOMATIC:
-            return AutomaticStrategy(
-                always_delete=config.always_delete, never_delete=config.never_delete
-            )
+            # For delete-unpacked, use always_delete flag. For organize, non-delete always True (handler internal logic).
+            if isinstance(config, DeleteUnpackedConfig):
+                return AutomaticConfirmationHandler(always_confirm=config.always_delete)
+            else:  # OrganizeConfig
+                # Non-delete actions always proceed in automatic mode (handler internal logic handles this)
+                return AutomaticConfirmationHandler(always_confirm=True)
         elif config.execution_mode == ExecutionMode.INTERACTIVE:
-            return InteractiveStrategy()
+            return InteractiveConfirmationHandler()
         else:
             # This should not happen with proper enum usage
             raise ValueError(f"Unknown execution mode: {config.execution_mode}")

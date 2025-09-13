@@ -10,7 +10,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from unclutter_directory.config.organize_config import OrganizeConfig
+from unclutter_directory.config.organize_config import ExecutionMode, OrganizeConfig
 from unclutter_directory.execution.unpacked_directory_cleaner import (
     UnpackedDirectoryCleaner,
 )
@@ -27,6 +27,7 @@ class TestUnpackedDirectoryCleaner:
         config.dry_run = False
         config.include_hidden = False
         config.never_delete = False
+        config.execution_mode = ExecutionMode.AUTOMATIC
         return config
 
     @pytest.fixture
@@ -37,6 +38,7 @@ class TestUnpackedDirectoryCleaner:
         config.dry_run = True
         config.include_hidden = False
         config.never_delete = False
+        config.execution_mode = ExecutionMode.DRY_RUN
         return config
 
     def setup_temp_files(
