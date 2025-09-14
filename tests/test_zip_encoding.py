@@ -40,4 +40,3 @@ def test_zip_archive_with_non_utf8_encoding():
         assert "test_file.txt" in names
         assert "folder/" in names
         assert "folder/subfile.txt" in names
-
