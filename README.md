@@ -84,7 +84,6 @@ unclutter delete-unpacked [OPTIONS] TARGET_DIR
 
 | Option           | Description                                   |
 |------------------|-----------------------------------------------|
-| --dry-run        | Show what would be removed (default behavior) |
 | --always-delete  | Remove uncompressed directories without confirmation |
 | --never-delete   | Only report matches, don't remove anything    |
 | --include-hidden | Include hidden files in structure comparison  |
