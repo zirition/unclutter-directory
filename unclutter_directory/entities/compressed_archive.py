@@ -38,8 +38,9 @@ class ZipArchive(CompressedArchive):
                         )
                         for name in zipf.namelist()
                     ]
-            except TypeError:
+            except (TypeError, UnicodeDecodeError):
                 # Fallback for older Python versions or if metadata_encoding is not supported
+                # Also handles cases where the ZIP file metadata is not UTF-8 encoded
                 with zipfile.ZipFile(archive_path, "r") as zipf:
                     return [
                         File(

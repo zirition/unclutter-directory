@@ -1,10 +1,13 @@
 from pathlib import Path
 
+from ..commons import get_logger
 from ..config.organize_config import OrganizeConfig
 from ..entities.file import File
 from ..execution.confirmation import ConfirmationHandler
 from ..file_operations.file_matcher import FileMatcher
 from .action_executor import ActionExecutor
+
+logger = get_logger()
 
 
 class FileProcessor:
@@ -104,8 +107,9 @@ class FileProcessor:
                     stats["processed_files"] += 1
                 else:
                     stats["skipped_files"] += 1
-            except Exception:
+            except Exception as e:
                 stats["errors"] += 1
+                logger.error(f"❌ Error processing {file_path}: {e}")
                 # Let ActionExecutor handle error logging
                 continue
 

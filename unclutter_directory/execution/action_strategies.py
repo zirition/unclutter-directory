@@ -233,7 +233,7 @@ class DeleteStrategy(ActionStrategy):
                 return None
 
         except Exception as e:
-            self._logger.error(f"❌ Error deleting {file_path}: {e}")
+            self._logger.error(f"❌ Error deleting {file_path}: {e}", exc_info=True)
             raise
 
 
@@ -330,7 +330,7 @@ class CompressStrategy(ActionStrategy):
             return target_path
 
         except Exception as e:
-            self._logger.error(f"❌ Error compressing {file_path}: {e}")
+            self._logger.error(f"❌ Error compressing {file_path}: {e}", exc_info=True)
             raise
 
     def _create_zip_archive(self, source_path: Path, target_path: Path) -> None:
