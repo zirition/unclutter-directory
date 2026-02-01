@@ -1,4 +1,6 @@
+import bz2
 import gzip
+import lzma
 import struct
 import tarfile
 import zipfile
@@ -191,6 +193,79 @@ class GzipArchive(CompressedArchive):
             return 0
 
 
+class Bzip2Archive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> list[File]:
+        archive_path = file.path / file.name
+        try:
+            name = self._default_name(archive_path)
+            size = self._read_uncompressed_size(archive_path)
+            return [File(file.path, name, file.date, size)]
+        except OSError as e:
+            logger.error(f"❌ Error reading bzip2 file {archive_path}: {e}")
+            return []
+
+    @staticmethod
+    def _default_name(archive_path: Path) -> str:
+        name = archive_path.name
+        for suffix in (".bz2", ".bz"):
+            if name.lower().endswith(suffix):
+                return name[: -len(suffix)]
+        return name
+
+    @staticmethod
+    def _read_uncompressed_size(archive_path: Path) -> int:
+        try:
+            with bz2.BZ2File(archive_path, "rb") as handle:
+                size = 0
+                while True:
+                    chunk = handle.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                return size
+        except OSError:
+            return 0
+
+
+class XzArchive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> list[File]:
+        archive_path = file.path / file.name
+        try:
+            name = self._default_name(archive_path)
+            size = self._read_uncompressed_size(archive_path)
+            return [File(file.path, name, file.date, size)]
+        except OSError as e:
+            logger.error(f"❌ Error reading xz file {archive_path}: {e}")
+            return []
+
+    @staticmethod
+    def _default_name(archive_path: Path) -> str:
+        name = archive_path.name
+        if name.lower().endswith(".xz"):
+            return name[:-3]
+        return name
+
+    @staticmethod
+    def _read_uncompressed_size(archive_path: Path) -> int:
+        try:
+            with lzma.open(archive_path, "rb") as handle:
+                size = 0
+                while True:
+                    chunk = handle.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                return size
+        except OSError:
+            return 0
+
+
 class TarGzArchive(CompressedArchive):
     def __init__(self):
         pass
@@ -335,10 +410,44 @@ class GzipHandler(ArchiveHandler):
 
     def can_handle(self, file: File) -> bool:
         lower_name = file.name.lower()
-        return lower_name.endswith(".gz") and not lower_name.endswith(".tar.gz")
+        return (
+            lower_name.endswith(".gz")
+            and not lower_name.endswith(".tar.gz")
+            and not lower_name.endswith(".tgz")
+        )
 
     def create_instance(self) -> CompressedArchive:
         return GzipArchive()
+
+
+class Bzip2Handler(ArchiveHandler):
+    """Handler for BZ2/BZ single-file archives (excludes .tar.bz2/.tbz*)."""
+
+    def can_handle(self, file: File) -> bool:
+        lower_name = file.name.lower()
+        if (
+            lower_name.endswith(".tar.bz2")
+            or lower_name.endswith(".tbz2")
+            or lower_name.endswith(".tbz")
+        ):
+            return False
+        return lower_name.endswith(".bz2") or lower_name.endswith(".bz")
+
+    def create_instance(self) -> CompressedArchive:
+        return Bzip2Archive()
+
+
+class XzHandler(ArchiveHandler):
+    """Handler for XZ single-file archives (excludes .tar.xz/.txz)."""
+
+    def can_handle(self, file: File) -> bool:
+        lower_name = file.name.lower()
+        if lower_name.endswith(".tar.xz") or lower_name.endswith(".txz"):
+            return False
+        return lower_name.endswith(".xz")
+
+    def create_instance(self) -> CompressedArchive:
+        return XzArchive()
 
 
 class TarGzHandler(ArchiveHandler):
@@ -393,6 +502,8 @@ class ArchiveHandlerChain:
             TarGzHandler(),
             TarBz2Handler(),
             TarXzHandler(),
+            Bzip2Handler(),
+            XzHandler(),
             GzipHandler(),
         ]
 

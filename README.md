@@ -35,7 +35,7 @@ A few reasons why Unclutter Directory stands out:
   - 🚚 Move files and folders to specific locations with ease
   - 🗑️ Delete obsolete files and folders safely
   - 📦 Compress files and folders into ZIP archives effortlessly
-  - 🔍 Search inside ZIP, RAR, 7Z, GZ (single-file), and TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ archives for matching files quickly
+  - 🔍 Search inside ZIP, RAR, 7Z, GZ/BZ2/XZ (single-file), and TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ archives for matching files quickly
 
 - **Unpacked Detection**
   - 🔍 Automatically remove uncompressed directories matching compressed files
@@ -145,7 +145,7 @@ unclutter delete-unpacked ~/Downloads --include-hidden
 ```
 
 **How it works:**
-- Scans for ZIP/RAR/7Z/GZ/TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ files in the target directory
+- Scans for ZIP/RAR/7Z/GZ/BZ2/XZ/TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ files in the target directory
 - Looks for directories with the same name (without extension)
 - Compares file structures between archive and directory
 - Prompts for deletion if structures are identical
@@ -188,7 +188,7 @@ The rules file must be valid YAML in this format:
 
   # OPTIONAL: Behavioral flags (boolean)
   case_sensitive: false     # Case-sensitive pattern matching (default: false)
-  check_archive: false      # Search inside ZIP/RAR/7Z/GZ/TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ archives
+  check_archive: false      # Search inside ZIP/RAR/7Z/GZ/BZ2/XZ/TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ archives
   is_directory: false       # Apply rule only to directories (default: false)
 ```
 
@@ -371,7 +371,7 @@ The boolean option `delete_unpacked_on_match` (default `false`) allows automatic
 
 ### Archive Handling
 
-Search inside compressed files (ZIP/RAR/7Z/GZ/TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ):
+Search inside compressed files (ZIP/RAR/7Z/GZ/BZ2/XZ/TAR.GZ/TGZ/TAR.BZ2/TBZ/TAR.XZ/TXZ):
 
 ```yaml
 - name: "Find Secret Documents"

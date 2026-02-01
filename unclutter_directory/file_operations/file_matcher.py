@@ -66,7 +66,7 @@ class FileMatcher:
         Get the appropriate archive manager for compressed files.
 
         Uses Chain of Responsibility pattern to determine the correct archive manager
-        based on the file extension. Currently supports ZIP, RAR, 7Z, GZ, TAR.GZ, TAR.BZ2, and TAR.XZ formats.
+        based on the file extension. Currently supports ZIP, RAR, 7Z, GZ, BZ2, XZ, TAR.GZ, TAR.BZ2, and TAR.XZ formats.
 
         Args:
             file (File): The file to get an archive manager for.
