@@ -1,3 +1,4 @@
+import gzip
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -153,6 +154,22 @@ def test_archive_match(data):
         matched_rule = matcher.match(file2)
         assert matched_rule is not None
         assert matched_rule == rule_check_archive
+
+
+def test_gzip_archive_match(tmp_path):
+    archive_path = tmp_path / "sample.iso.gz"
+    with gzip.open(archive_path, "wb") as gz:
+        gz.write(b"hello world")
+
+    file_obj = File.from_path(archive_path)
+    rule_check_archive = {
+        "conditions": {"end": ".iso"},
+        "check_archive": True,
+    }
+    matcher = FileMatcher([rule_check_archive])
+    matched_rule = matcher.match(file_obj)
+    assert matched_rule is not None
+    assert matched_rule == rule_check_archive
 
 
 def test_match_name_start_case_insensitive(data):

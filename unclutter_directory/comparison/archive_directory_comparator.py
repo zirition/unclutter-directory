@@ -40,7 +40,7 @@ class ComparisonResult:
 
 class ArchiveDirectoryComparator:
     """
-    Compares compressed archive files (ZIP, RAR, 7Z) with their corresponding directories
+    Compares compressed archive files (ZIP, RAR, 7Z, GZ) with their corresponding directories
     to determine if they contain identical file structures.
     """
 

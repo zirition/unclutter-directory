@@ -1,5 +1,8 @@
+import gzip
+import struct
 import zipfile
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import py7zr
 import rarfile
@@ -109,6 +112,84 @@ class SevenZipArchive(CompressedArchive):
             return []
 
 
+class GzipArchive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> list[File]:
+        archive_path = file.path / file.name
+        try:
+            name, mtime = self._read_header_name_and_mtime(archive_path)
+            if not name:
+                name = self._default_name(archive_path)
+            size = self._read_uncompressed_size(archive_path)
+            timestamp = mtime if mtime else file.date
+            return [File(file.path, name, timestamp, size)]
+        except OSError as e:
+            logger.error(f"❌ Error reading gzip file {archive_path}: {e}")
+            return []
+
+    @staticmethod
+    def _default_name(archive_path: Path) -> str:
+        name = archive_path.name
+        if name.lower().endswith(".gz"):
+            return name[:-3]
+        return name
+
+    @staticmethod
+    def _read_header_name_and_mtime(archive_path: Path) -> tuple[str | None, int | None]:
+        try:
+            with archive_path.open("rb") as handle:
+                header = handle.read(10)
+                if len(header) < 10 or header[0:2] != b"\x1f\x8b":
+                    return None, None
+                flags = header[3]
+                mtime = struct.unpack("<I", header[4:8])[0] or None
+
+                # Extra field
+                if flags & 0x04:
+                    extra_len_bytes = handle.read(2)
+                    if len(extra_len_bytes) < 2:
+                        return None, mtime
+                    extra_len = struct.unpack("<H", extra_len_bytes)[0]
+                    handle.seek(extra_len, 1)
+
+                # Original filename
+                name = None
+                if flags & 0x08:
+                    name_bytes = bytearray()
+                    while True:
+                        chunk = handle.read(1)
+                        if not chunk:
+                            return None, mtime
+                        if chunk == b"\x00":
+                            break
+                        name_bytes.extend(chunk)
+                    try:
+                        name = name_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        name = name_bytes.decode("latin-1", errors="replace")
+
+                return Path(name).name if name else None, mtime
+        except OSError:
+            return None, None
+
+    @staticmethod
+    def _read_uncompressed_size(archive_path: Path) -> int:
+        try:
+            file_size = archive_path.stat().st_size
+            if file_size < 4:
+                return 0
+            with archive_path.open("rb") as handle:
+                handle.seek(-4, 2)
+                size_bytes = handle.read(4)
+            if len(size_bytes) < 4:
+                return 0
+            return struct.unpack("<I", size_bytes)[0]
+        except OSError:
+            return 0
+
+
 # Chain of Responsibility Pattern Implementation
 class ArchiveHandler(ABC):
     """Abstract base class for archive handlers in the chain"""
@@ -167,6 +248,17 @@ class SevenZipHandler(ArchiveHandler):
         return SevenZipArchive()
 
 
+class GzipHandler(ArchiveHandler):
+    """Handler for GZIP archive files (single-file)."""
+
+    def can_handle(self, file: File) -> bool:
+        lower_name = file.name.lower()
+        return lower_name.endswith(".gz") and not lower_name.endswith(".tar.gz")
+
+    def create_instance(self) -> CompressedArchive:
+        return GzipArchive()
+
+
 class ArchiveHandlerChain:
     """
     Chain of responsibility pattern for archive file handling.
@@ -179,6 +271,7 @@ class ArchiveHandlerChain:
             ZipHandler(),
             RarHandler(),
             SevenZipHandler(),
+            GzipHandler(),
         ]
 
     def add_handler(self, handler: ArchiveHandler) -> None:
@@ -218,7 +311,7 @@ def get_archive_manager(file: File) -> CompressedArchive | None:
 
     This function replaces the hard-coded if-elif logic in FileMatcher and ArchiveDirectoryComparator
     and provides a cleaner, more extensible way to handle different archive formats
-    such as ZIP, RAR, and 7Z.
+    such as ZIP, RAR, 7Z, and GZ.
 
     Args:
         file: The file to get an archive manager for

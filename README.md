@@ -35,7 +35,7 @@ A few reasons why Unclutter Directory stands out:
   - 🚚 Move files and folders to specific locations with ease
   - 🗑️ Delete obsolete files and folders safely
   - 📦 Compress files and folders into ZIP archives effortlessly
-  - 🔍 Search inside ZIP, RAR, and 7Z archives for matching files quickly
+  - 🔍 Search inside ZIP, RAR, 7Z, and GZ (single-file, excludes .tar.gz) archives for matching files quickly
 
 - **Unpacked Detection**
   - 🔍 Automatically remove uncompressed directories matching compressed files
@@ -145,7 +145,7 @@ unclutter delete-unpacked ~/Downloads --include-hidden
 ```
 
 **How it works:**
-- Scans for ZIP/RAR/7Z files in the target directory
+- Scans for ZIP/RAR/7Z/GZ files in the target directory (GZ excludes .tar.gz)
 - Looks for directories with the same name (without extension)
 - Compares file structures between archive and directory
 - Prompts for deletion if structures are identical
@@ -188,7 +188,7 @@ The rules file must be valid YAML in this format:
 
   # OPTIONAL: Behavioral flags (boolean)
   case_sensitive: false     # Case-sensitive pattern matching (default: false)
-  check_archive: false      # Search inside ZIP/RAR/7Z archives (default: false)
+  check_archive: false      # Search inside ZIP/RAR/7Z/GZ archives (GZ excludes .tar.gz)
   is_directory: false       # Apply rule only to directories (default: false)
 ```
 
@@ -371,7 +371,7 @@ The boolean option `delete_unpacked_on_match` (default `false`) allows automatic
 
 ### Archive Handling
 
-Search inside compressed files:
+Search inside compressed files (ZIP/RAR/7Z/GZ, excluding .tar.gz):
 
 ```yaml
 - name: "Find Secret Documents"
@@ -433,4 +433,3 @@ To contribute:
 Have questions, found a bug, or want to request a feature? 
 
 - 🐞 Open an issue on GitHub: [https://github.com/zirition/unclutter-directory/issues](https://github.com/zirition/unclutter-directory/issues)
-
