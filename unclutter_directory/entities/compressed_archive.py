@@ -97,12 +97,20 @@ class SevenZipArchive(CompressedArchive):
                     # Add trailing slash to directory names for consistency with ZIP/RAR
                     if file_info.is_directory and not name.endswith("/"):
                         name = name + "/"
+                    timestamp = self._get_fileinfo_timestamp(file_info)
+                    if timestamp is None:
+                        timestamp = file.date if file.date is not None else 0
+                    size = (
+                        file_info.uncompressed
+                        if hasattr(file_info, "uncompressed")
+                        else getattr(file_info, "size", 0)
+                    )
                     files.append(
                         File(
                             file.path,
                             name,
-                            file_info.lastwritetime,
-                            file_info.uncompressed,
+                            timestamp,
+                            size,
                         )
                     )
                 return files
@@ -112,6 +120,17 @@ class SevenZipArchive(CompressedArchive):
         except Exception as e:
             logger.error(f"❌ Unexpected error reading 7z file {archive_path}: {e}")
             return []
+
+    @staticmethod
+    def _get_fileinfo_timestamp(file_info):
+        for attr in ("lastwritetime", "mtime", "modified", "date_time"):
+            value = getattr(file_info, attr, None)
+            if value is None:
+                continue
+            if hasattr(value, "timestamp"):
+                return value.timestamp()
+            return value
+        return None
 
 
 class GzipArchive(CompressedArchive):
