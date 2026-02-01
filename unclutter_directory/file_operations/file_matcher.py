@@ -1,3 +1,5 @@
+import time
+
 from ..commons.validations import parse_size, parse_time
 from ..entities.compressed_archive import CompressedArchive, get_archive_manager
 from ..entities.file import File
@@ -135,7 +137,8 @@ class FileMatcher:
             return False
 
         # Age conditions
-        age_seconds = file.date
+        # file.date stores modification time (epoch seconds). Convert to age.
+        age_seconds = max(0, time.time() - file.date)
         if "older" in conditions and age_seconds < parse_time(conditions["older"]):
             return False
         if "newer" in conditions and age_seconds > parse_time(conditions["newer"]):

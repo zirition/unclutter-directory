@@ -1,4 +1,4 @@
-from datetime import timedelta
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -11,23 +11,24 @@ from unclutter_directory.file_operations.file_matcher import FileMatcher
 
 @pytest.fixture
 def data():
+    now = time.time()
     file1 = File(
         path=Path("/some/path"),
         name="example1.txt",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=now - (1.5 * 60 * 60),
         size=1000,
     )
     file2 = File(
         path=Path("/some/path"),
         name="example2.zip",
-        date=timedelta(hours=1).total_seconds(),
+        date=now - (1 * 60 * 60),
         size=2000,
     )
 
     file_in_zip = File(
         path=Path("/archive/path"),
         name="inside.txt",
-        date=timedelta(seconds=0).total_seconds(),
+        date=now,
         size=500,
     )
 
@@ -159,7 +160,7 @@ def test_match_name_start_case_insensitive(data):
     file1_upper = File(
         path=Path("/some/path"),
         name="EXAMPLE1.TXT",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=time.time() - (1.5 * 60 * 60),
         size=1000,
     )
     matcher = FileMatcher([rule_name_start])
@@ -173,7 +174,7 @@ def test_match_name_end_case_insensitive(data):
     file1_upper = File(
         path=Path("/some/path"),
         name="EXAMPLE2.TXT",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=time.time() - (1.5 * 60 * 60),
         size=1000,
     )
     matcher = FileMatcher([rule_name_end])
@@ -187,7 +188,7 @@ def test_match_name_contain_case_insensitive(data):
     file1_mixed = File(
         path=Path("/some/path"),
         name="Example1.txt",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=time.time() - (1.5 * 60 * 60),
         size=1000,
     )
     matcher = FileMatcher([rule_name_contain])
@@ -201,7 +202,7 @@ def test_match_name_regex_case_insensitive(data):
     file2_upper = File(
         path=Path("/some/path"),
         name="EXAMPL2.ZIP",
-        date=timedelta(hours=1).total_seconds(),
+        date=time.time() - (1 * 60 * 60),
         size=2000,
     )
     matcher = FileMatcher([rule_name_regex])
@@ -214,7 +215,7 @@ def test_match_name_start_case_sensitive(data):
     file1_upper = File(
         path=Path("/some/path"),
         name="EXAMPLE1.TXT",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=time.time() - (1.5 * 60 * 60),
         size=1000,
     )
     matcher = FileMatcher(
@@ -228,7 +229,7 @@ def test_match_name_end_case_sensitive(data):
     file1_upper = File(
         path=Path("/some/path"),
         name="EXAMPLE1.TXT",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=time.time() - (1.5 * 60 * 60),
         size=1000,
     )
     matcher = FileMatcher([{"conditions": {"end": ".txt"}, "case_sensitive": True}])
@@ -240,7 +241,7 @@ def test_match_name_contain_case_sensitive(data):
     file1_upper = File(
         path=Path("/some/path"),
         name="EXAMPLE1.TXT",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=time.time() - (1.5 * 60 * 60),
         size=1000,
     )
     matcher = FileMatcher(
@@ -254,7 +255,7 @@ def test_match_name_regex_case_sensitive(data):
     file1_upper = File(
         path=Path("/some/path"),
         name="EXAMPLE1.TXT",
-        date=timedelta(hours=1.5).total_seconds(),
+        date=time.time() - (1.5 * 60 * 60),
         size=1000,
     )
     matcher = FileMatcher(
