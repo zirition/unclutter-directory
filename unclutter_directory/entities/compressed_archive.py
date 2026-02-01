@@ -1,5 +1,4 @@
 import bz2
-import gzip
 import lzma
 import struct
 import tarfile

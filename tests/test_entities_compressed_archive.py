@@ -1,12 +1,8 @@
-"""
-Tests for CompressedArchive implementations and handlers.
-"""
-
-import tempfile
 import bz2
 import gzip
 import lzma
 import tarfile
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -17,6 +13,10 @@ from unclutter_directory.entities.compressed_archive import (
     Bzip2Handler,
     GzipArchive,
     GzipHandler,
+    RarArchive,
+    RarHandler,
+    SevenZipArchive,
+    SevenZipHandler,
     TarBz2Archive,
     TarBz2Handler,
     TarGzArchive,
@@ -25,10 +25,6 @@ from unclutter_directory.entities.compressed_archive import (
     TarXzHandler,
     XzArchive,
     XzHandler,
-    RarArchive,
-    RarHandler,
-    SevenZipArchive,
-    SevenZipHandler,
     ZipArchive,
     ZipHandler,
     get_archive_manager,
