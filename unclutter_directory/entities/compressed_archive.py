@@ -139,7 +139,9 @@ class GzipArchive(CompressedArchive):
         return name
 
     @staticmethod
-    def _read_header_name_and_mtime(archive_path: Path) -> tuple[str | None, int | None]:
+    def _read_header_name_and_mtime(
+        archive_path: Path,
+    ) -> tuple[str | None, int | None]:
         try:
             with archive_path.open("rb") as handle:
                 header = handle.read(10)
