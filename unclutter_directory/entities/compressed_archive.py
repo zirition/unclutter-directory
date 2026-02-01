@@ -1,5 +1,6 @@
 import gzip
 import struct
+import tarfile
 import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -190,6 +191,33 @@ class GzipArchive(CompressedArchive):
             return 0
 
 
+class TarGzArchive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> list[File]:
+        archive_path = file.path / file.name
+        try:
+            with tarfile.open(archive_path, mode="r:gz") as tarf:
+                files: list[File] = []
+                for member in tarf.getmembers():
+                    name = member.name
+                    if member.isdir() and not name.endswith("/"):
+                        name = name + "/"
+                    files.append(
+                        File(
+                            file.path,
+                            name,
+                            member.mtime,
+                            member.size,
+                        )
+                    )
+                return files
+        except (tarfile.TarError, OSError) as e:
+            logger.error(f"❌ Error reading tar.gz file {archive_path}: {e}")
+            return []
+
+
 # Chain of Responsibility Pattern Implementation
 class ArchiveHandler(ABC):
     """Abstract base class for archive handlers in the chain"""
@@ -259,6 +287,17 @@ class GzipHandler(ArchiveHandler):
         return GzipArchive()
 
 
+class TarGzHandler(ArchiveHandler):
+    """Handler for TAR.GZ / TGZ archive files."""
+
+    def can_handle(self, file: File) -> bool:
+        lower_name = file.name.lower()
+        return lower_name.endswith(".tar.gz") or lower_name.endswith(".tgz")
+
+    def create_instance(self) -> CompressedArchive:
+        return TarGzArchive()
+
+
 class ArchiveHandlerChain:
     """
     Chain of responsibility pattern for archive file handling.
@@ -271,6 +310,7 @@ class ArchiveHandlerChain:
             ZipHandler(),
             RarHandler(),
             SevenZipHandler(),
+            TarGzHandler(),
             GzipHandler(),
         ]
 

@@ -40,7 +40,7 @@ class ComparisonResult:
 
 class ArchiveDirectoryComparator:
     """
-    Compares compressed archive files (ZIP, RAR, 7Z, GZ) with their corresponding directories
+    Compares compressed archive files (ZIP, RAR, 7Z, GZ, TAR.GZ) with their corresponding directories
     to determine if they contain identical file structures.
     """
 
@@ -164,7 +164,7 @@ class ArchiveDirectoryComparator:
             directory_files = self.directory_analyzer.get_files(directory_path)
 
             # Extract and normalize the expected directory name from the archive filename
-            expected_dir_name = archive_path.stem
+            expected_dir_name = self._get_expected_dir_name(archive_path)
 
             # Process archive files to normalize paths and strip directory prefix
             processed_archive_files = []
@@ -229,6 +229,15 @@ class ArchiveDirectoryComparator:
         # Convert Path to File object for the new API
         archive_file = File.from_path(archive_path)
         return get_archive_manager(archive_file)
+
+    @staticmethod
+    def _get_expected_dir_name(archive_path: Path) -> str:
+        lower_name = archive_path.name.lower()
+        if lower_name.endswith(".tar.gz"):
+            return archive_path.name[: -len(".tar.gz")]
+        if lower_name.endswith(".tgz"):
+            return archive_path.name[: -len(".tgz")]
+        return archive_path.stem
 
     def _compare_file_structures(
         self, archive_files: list[File], directory_files: list[File]

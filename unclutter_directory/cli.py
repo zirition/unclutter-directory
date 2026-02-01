@@ -144,7 +144,7 @@ def delete_unpacked(
     """
     Remove uncompressed directories that match compressed files.
 
-    Scans TARGET_DIR for compressed files (ZIP, RAR, 7Z, GZ) and looks for
+    Scans TARGET_DIR for compressed files (ZIP, RAR, 7Z, GZ, TAR.GZ) and looks for
     directories with the same name (without extension). If they exist
     and have identical file structures, prompts to remove the uncompressed directory.
 

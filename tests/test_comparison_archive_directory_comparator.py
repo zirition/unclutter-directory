@@ -125,7 +125,7 @@ def test_unsupported_archive_format(comparator_and_root):
     test_dir.mkdir()
 
     # Create file with unsupported extension
-    unsupported_path = root / "test.tar.gz"
+    unsupported_path = root / "test.tar"
     unsupported_path.write_text("fake archive")
 
     result = comparator.compare_archive_and_directory(unsupported_path, test_dir)
