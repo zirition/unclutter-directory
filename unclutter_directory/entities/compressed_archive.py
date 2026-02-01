@@ -218,6 +218,60 @@ class TarGzArchive(CompressedArchive):
             return []
 
 
+class TarBz2Archive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> list[File]:
+        archive_path = file.path / file.name
+        try:
+            with tarfile.open(archive_path, mode="r:bz2") as tarf:
+                files: list[File] = []
+                for member in tarf.getmembers():
+                    name = member.name
+                    if member.isdir() and not name.endswith("/"):
+                        name = name + "/"
+                    files.append(
+                        File(
+                            file.path,
+                            name,
+                            member.mtime,
+                            member.size,
+                        )
+                    )
+                return files
+        except (tarfile.TarError, OSError) as e:
+            logger.error(f"❌ Error reading tar.bz2 file {archive_path}: {e}")
+            return []
+
+
+class TarXzArchive(CompressedArchive):
+    def __init__(self):
+        pass
+
+    def get_files(self, file: File) -> list[File]:
+        archive_path = file.path / file.name
+        try:
+            with tarfile.open(archive_path, mode="r:xz") as tarf:
+                files: list[File] = []
+                for member in tarf.getmembers():
+                    name = member.name
+                    if member.isdir() and not name.endswith("/"):
+                        name = name + "/"
+                    files.append(
+                        File(
+                            file.path,
+                            name,
+                            member.mtime,
+                            member.size,
+                        )
+                    )
+                return files
+        except (tarfile.TarError, OSError) as e:
+            logger.error(f"❌ Error reading tar.xz file {archive_path}: {e}")
+            return []
+
+
 # Chain of Responsibility Pattern Implementation
 class ArchiveHandler(ABC):
     """Abstract base class for archive handlers in the chain"""
@@ -298,6 +352,32 @@ class TarGzHandler(ArchiveHandler):
         return TarGzArchive()
 
 
+class TarBz2Handler(ArchiveHandler):
+    """Handler for TAR.BZ2 / TBZ2 / TBZ archive files."""
+
+    def can_handle(self, file: File) -> bool:
+        lower_name = file.name.lower()
+        return (
+            lower_name.endswith(".tar.bz2")
+            or lower_name.endswith(".tbz2")
+            or lower_name.endswith(".tbz")
+        )
+
+    def create_instance(self) -> CompressedArchive:
+        return TarBz2Archive()
+
+
+class TarXzHandler(ArchiveHandler):
+    """Handler for TAR.XZ / TXZ archive files."""
+
+    def can_handle(self, file: File) -> bool:
+        lower_name = file.name.lower()
+        return lower_name.endswith(".tar.xz") or lower_name.endswith(".txz")
+
+    def create_instance(self) -> CompressedArchive:
+        return TarXzArchive()
+
+
 class ArchiveHandlerChain:
     """
     Chain of responsibility pattern for archive file handling.
@@ -311,6 +391,8 @@ class ArchiveHandlerChain:
             RarHandler(),
             SevenZipHandler(),
             TarGzHandler(),
+            TarBz2Handler(),
+            TarXzHandler(),
             GzipHandler(),
         ]
 

@@ -13,8 +13,12 @@ from unclutter_directory.entities.compressed_archive import (
     ArchiveHandlerChain,
     GzipArchive,
     GzipHandler,
+    TarBz2Archive,
+    TarBz2Handler,
     TarGzArchive,
     TarGzHandler,
+    TarXzArchive,
+    TarXzHandler,
     RarArchive,
     RarHandler,
     SevenZipArchive,
@@ -45,6 +49,11 @@ def sample_files():
         "gz": File(data_dir, "test.gz", None, None),
         "tar_gz": File(data_dir, "test.tar.gz", None, None),
         "tgz": File(data_dir, "test.tgz", None, None),
+        "tar_bz2": File(data_dir, "test.tar.bz2", None, None),
+        "tbz2": File(data_dir, "test.tbz2", None, None),
+        "tbz": File(data_dir, "test.tbz", None, None),
+        "tar_xz": File(data_dir, "test.tar.xz", None, None),
+        "txz": File(data_dir, "test.txz", None, None),
     }
 
 
@@ -122,14 +131,60 @@ def test_tar_gz_archive_get_files(temp_dir):
     assert "subdir/file2.txt" in names
 
 
+def test_tar_bz2_archive_get_files(temp_dir):
+    """Test TarBz2Archive get_files method for multi-file archives."""
+    archive_path = temp_dir / "sample.tar.bz2"
+    file1 = temp_dir / "file1.txt"
+    file2 = temp_dir / "subdir" / "file2.txt"
+    file2.parent.mkdir()
+    file1.write_text("hello")
+    file2.write_text("world")
+
+    with tarfile.open(archive_path, "w:bz2") as tarf:
+        tarf.add(file1, arcname="file1.txt")
+        tarf.add(file2, arcname="subdir/file2.txt")
+
+    file_obj = File(temp_dir, archive_path.name, None, None)
+    archive = TarBz2Archive()
+    files = archive.get_files(file_obj)
+
+    names = {f.name for f in files}
+    assert "file1.txt" in names
+    assert "subdir/file2.txt" in names
+
+
+def test_tar_xz_archive_get_files(temp_dir):
+    """Test TarXzArchive get_files method for multi-file archives."""
+    archive_path = temp_dir / "sample.tar.xz"
+    file1 = temp_dir / "file1.txt"
+    file2 = temp_dir / "subdir" / "file2.txt"
+    file2.parent.mkdir()
+    file1.write_text("hello")
+    file2.write_text("world")
+
+    with tarfile.open(archive_path, "w:xz") as tarf:
+        tarf.add(file1, arcname="file1.txt")
+        tarf.add(file2, arcname="subdir/file2.txt")
+
+    file_obj = File(temp_dir, archive_path.name, None, None)
+    archive = TarXzArchive()
+    files = archive.get_files(file_obj)
+
+    names = {f.name for f in files}
+    assert "file1.txt" in names
+    assert "subdir/file2.txt" in names
+
+
 @pytest.mark.parametrize(
-    "handler_class, expected_zip, expected_rar, expected_7z, expected_gz, expected_tar_gz, expected_tgz",
+    "handler_class, expected_zip, expected_rar, expected_7z, expected_gz, expected_tar_gz, expected_tgz, expected_tar_bz2, expected_tbz2, expected_tbz, expected_tar_xz, expected_txz",
     [
-        (ZipHandler, True, False, False, False, False, False),
-        (RarHandler, False, True, False, False, False, False),
-        (SevenZipHandler, False, False, True, False, False, False),
-        (GzipHandler, False, False, False, True, False, False),
-        (TarGzHandler, False, False, False, False, True, True),
+        (ZipHandler, True, False, False, False, False, False, False, False, False, False, False),
+        (RarHandler, False, True, False, False, False, False, False, False, False, False, False),
+        (SevenZipHandler, False, False, True, False, False, False, False, False, False, False, False),
+        (GzipHandler, False, False, False, True, False, False, False, False, False, False, False),
+        (TarGzHandler, False, False, False, False, True, True, False, False, False, False, False),
+        (TarBz2Handler, False, False, False, False, False, False, True, True, True, False, False),
+        (TarXzHandler, False, False, False, False, False, False, False, False, False, True, True),
     ],
     ids=[
         "zip_handler",
@@ -137,6 +192,8 @@ def test_tar_gz_archive_get_files(temp_dir):
         "seven_zip_handler",
         "gzip_handler",
         "tar_gz_handler",
+        "tar_bz2_handler",
+        "tar_xz_handler",
     ],
 )
 def test_handler_can_handle(
@@ -148,6 +205,11 @@ def test_handler_can_handle(
     expected_gz,
     expected_tar_gz,
     expected_tgz,
+    expected_tar_bz2,
+    expected_tbz2,
+    expected_tbz,
+    expected_tar_xz,
+    expected_txz,
 ):
     """Test handler can_handle method for different archive types."""
     handler = handler_class()
@@ -157,6 +219,11 @@ def test_handler_can_handle(
     assert handler.can_handle(sample_files["gz"]) == expected_gz
     assert handler.can_handle(sample_files["tar_gz"]) == expected_tar_gz
     assert handler.can_handle(sample_files["tgz"]) == expected_tgz
+    assert handler.can_handle(sample_files["tar_bz2"]) == expected_tar_bz2
+    assert handler.can_handle(sample_files["tbz2"]) == expected_tbz2
+    assert handler.can_handle(sample_files["tbz"]) == expected_tbz
+    assert handler.can_handle(sample_files["tar_xz"]) == expected_tar_xz
+    assert handler.can_handle(sample_files["txz"]) == expected_txz
 
 
 @pytest.mark.parametrize(
@@ -166,9 +233,11 @@ def test_handler_can_handle(
         ("7z", SevenZipArchive),
         ("gz", GzipArchive),
         ("tar_gz", TarGzArchive),
+        ("tar_bz2", TarBz2Archive),
+        ("tar_xz", TarXzArchive),
         ("unsupported", None),
     ],
-    ids=["zip", "7z", "gz", "tar_gz", "unsupported"],
+    ids=["zip", "7z", "gz", "tar_gz", "tar_bz2", "tar_xz", "unsupported"],
 )
 def test_archive_handler_chain(sample_files, temp_dir, file_key, expected_type):
     """Test ArchiveHandlerChain get_archive_handler for different file types."""
@@ -193,8 +262,13 @@ def test_archive_handler_chain(sample_files, temp_dir, file_key, expected_type):
         ("gz", GzipArchive),
         ("tar_gz", TarGzArchive),
         ("tgz", TarGzArchive),
+        ("tar_bz2", TarBz2Archive),
+        ("tbz2", TarBz2Archive),
+        ("tbz", TarBz2Archive),
+        ("tar_xz", TarXzArchive),
+        ("txz", TarXzArchive),
     ],
-    ids=["zip", "7z", "rar", "gz", "tar_gz", "tgz"],
+    ids=["zip", "7z", "rar", "gz", "tar_gz", "tgz", "tar_bz2", "tbz2", "tbz", "tar_xz", "txz"],
 )
 def test_get_archive_manager(sample_files, file_key, expected_type):
     """Test get_archive_manager for different archive types."""
